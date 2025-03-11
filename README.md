@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Fingerprint Visitor Demo
 
-## Getting Started
+A Next.js application that demonstrates visitor identification and tracking using Fingerprint Pro.
 
-First, run the development server:
+## Overview
 
-```bash
+This application showcases how to implement visitor identification across browser sessions using Fingerprint Pro. It displays visitor information and demonstrates how to integrate Fingerprint's client-side SDK in a React/Next.js environment.
+
+## Features
+
+* Visitor identification and tracking
+* Display of visitor information
+* Responsive UI with dark mode support
+
+## Technology Stack
+
+* [Next.js](https://nextjs.org/)
+* [React](https://reactjs.org/)
+* [Fingerprint Pro](https://fingerprint.com/)
+* [Tailwind CSS](https://tailwindcss.com/)
+
+## Prerequisites
+
+* Node.js 14.x or higher
+* A Fingerprint Pro API key
+
+## Setup
+
+1. Clone the repository:
+```
+git clone https://github.com/yourusername/fingerprint-visitor-demo.git
+cd fingerprint-visitor-demo
+```
+
+2. Install dependencies:
+```
+npm install
+# or
+yarn install
+```
+
+3. Create a `.env.local` file in the root directory with your Fingerprint API key:
+```
+NEXT_PUBLIC_FINGERPRINT_API_KEY=your_fingerprint_api_key
+```
+
+## Running the Application
+
+Run the development server:
+```
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The application uses the Fingerprint Pro React SDK to identify visitors. The main components are:
 
-## Learn More
+* `FpjsProvider`: Provides the Fingerprint context to the application
+* `VisitorInfo`: Displays information about the current visitor
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+MIT
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Resources
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* [Fingerprint Documentation](https://dev.fingerprint.com/)
+* [Next.js Documentation](https://nextjs.org/docs)
