@@ -189,13 +189,68 @@ export default function VisitorInfo() {
                 {serverData.lastSeen && <p><span className="font-medium">Last Seen:</span> {new Date(serverData.lastSeen).toLocaleString()}</p>}
               </div>
               
-              {serverData.latestEventDetails && (
+              {(serverData.latestEventDetails || serverData.recentVisits?.[0]) && (
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
                   <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Latest Event</h4>
-                  <p><span className="font-medium">Request ID:</span> {serverData.latestEventDetails.requestId}</p>
-                  <p><span className="font-medium">Time:</span> {new Date(serverData.latestEventDetails.timestamp).toLocaleString()}</p>
-                  <p><span className="font-medium">IP:</span> {serverData.latestEventDetails.ip}</p>
-                  {serverData.latestEventDetails.incognito && <p><span className="font-medium">Incognito:</span> Yes</p>}
+                  {(() => {
+                    // Get event data from either source
+                    const rawEvent = serverData.latestEventDetails || serverData.recentVisits?.[0] || {};
+                    
+                    const identData = rawEvent.products?.identification?.data;
+                    
+                    // Extract main fields
+                    const requestId = identData?.requestId || rawEvent.products?.botd?.data?.requestId || rawEvent.requestId;
+                    const timestamp = identData?.timestamp || rawEvent.timestamp;
+                    const ip = identData?.ip || rawEvent.products?.ipInfo?.data?.v4?.address || rawEvent.ip;
+                    
+                    // Browser details
+                    const browserName = identData?.browserDetails?.browserName;
+                    const browserVersion = identData?.browserDetails?.browserFullVersion;
+                    const os = identData?.browserDetails?.os;
+                    const osVersion = identData?.browserDetails?.osVersion;
+                    
+                    // Get location info if available
+                    const city = rawEvent.products?.ipInfo?.data?.v4?.geolocation?.city?.name;
+                    const country = rawEvent.products?.ipInfo?.data?.v4?.geolocation?.country?.name;
+                    
+                    // Security signals
+                    const incognito = identData?.incognito || rawEvent.products?.incognito?.data?.result;
+                    const isBot = rawEvent.products?.botd?.data?.bot?.result !== "notDetected";
+                    const isVpn = rawEvent.products?.vpn?.data?.result;
+                    const devTools = rawEvent.products?.developerTools?.data?.result;
+                    
+                    //console.log("Latest event data structure:", rawEvent);
+                    
+                    return (
+                      <>
+                        <p><span className="font-medium">Request ID:</span> {requestId || 'N/A'}</p>
+                        <p><span className="font-medium">Time:</span> {timestamp ? new Date(timestamp).toLocaleString() : 'N/A'}</p>
+                        <p><span className="font-medium">IP:</span> {ip || 'N/A'}</p>
+                        
+                        {/* Browser info if available */}
+                        {browserName && (
+                          <p><span className="font-medium">Browser:</span> {browserName} {browserVersion}</p>
+                        )}
+                        
+                        {os && (
+                          <p><span className="font-medium">OS:</span> {os} {osVersion}</p>
+                        )}
+                        
+                        {/* Location if available */}
+                        {(city || country) && (
+                          <p><span className="font-medium">Location:</span> {[city, country].filter(Boolean).join(', ')}</p>
+                        )}
+                        
+                        {/* Security indicators */}
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                          {incognito && <p><span className="font-medium">Incognito:</span> Yes</p>}
+                          {isBot && <p><span className="font-medium">Bot:</span> Yes</p>}
+                          {isVpn && <p><span className="font-medium">VPN:</span> Yes</p>}
+                          {devTools && <p><span className="font-medium">Developer Tools:</span> Open</p>}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
