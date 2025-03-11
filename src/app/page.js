@@ -6,6 +6,7 @@ import {
 import VisitorInfo from './components/VisitorInfo'
 
 export default function Home() {
+
   return (
     <FpjsProvider
       loadOptions={{
