@@ -94,7 +94,7 @@ export default function VisitorInfo() {
           // Initialize search with default filters
           const defaultFilters = { limit: 10 };
           if (visitorData.visitorId) {
-            defaultFilters.visitor_id = visitorData.visitorId;
+            defaultFilters.visitorId = visitorData.visitorId;
           }
           //console.log('Initial search with filters:', defaultFilters);
           fetchServerData(null, 'searchEvents', { filters: defaultFilters });
@@ -125,13 +125,17 @@ export default function VisitorInfo() {
       delete filters.linkedId;
     }
     
+    if (filters.ipAddress) {
+      filters.ip_address = filters.ipAddress;
+      delete filters.ipAddress;
+    }
+    
     // Add date range if provided - convert to Unix timestamp in milliseconds
     if (dateRange.startDate) {
       // Ensure the date string is valid
       const startDate = new Date(dateRange.startDate);
       if (!isNaN(startDate.getTime())) {
         filters.start = startDate.getTime();
-        console.log('Start date converted to:', filters.start);
       }
     }
     
@@ -140,7 +144,6 @@ export default function VisitorInfo() {
       const endDate = new Date(dateRange.endDate);
       if (!isNaN(endDate.getTime())) {
         filters.end = endDate.getTime();
-        console.log('End date converted to:', filters.end);
       }
     }
     
@@ -351,18 +354,6 @@ export default function VisitorInfo() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Request ID</label>
-                <input
-                  type="text"
-                  name="requestId"
-                  value={searchFilters.requestId || ''}
-                  onChange={handleFilterChange}
-                  placeholder="Enter request ID"
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              
-              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Linked ID</label>
                 <input
                   type="text"
@@ -375,27 +366,31 @@ export default function VisitorInfo() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address</label>
                 <input
                   type="text"
-                  name="tag"
-                  value={searchFilters.tag || ''}
+                  name="ipAddress"
+                  value={searchFilters.ipAddress || ''}
                   onChange={handleFilterChange}
-                  placeholder="Enter tag"
+                  placeholder="Enter IP address (CIDR notation)"
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address</label>
-                <input
-                  type="text"
-                  name="ip"
-                  value={searchFilters.ip || ''}
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bot Detection</label>
+                <select
+                  name="bot"
+                  value={searchFilters.bot || ''}
                   onChange={handleFilterChange}
-                  placeholder="Enter IP address"
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
+                >
+                  <option value="">Any</option>
+                  <option value="all">All Bots</option>
+                  <option value="good">Good Bots</option>
+                  <option value="bad">Bad Bots</option>
+                  <option value="none">No Bots</option>
+                </select>
               </div>
               
               <div>
@@ -445,6 +440,19 @@ export default function VisitorInfo() {
                   max="100"
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reverse Order</label>
+                <select
+                  name="reverse"
+                  value={searchFilters.reverse || ''}
+                  onChange={handleFilterChange}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">Default Order</option>
+                  <option value="true">Reverse Order</option>
+                </select>
               </div>
             </div>
             
@@ -560,6 +568,11 @@ export default function VisitorInfo() {
                       if (paginatedFilters.linkedId) {
                         paginatedFilters.linked_id = paginatedFilters.linkedId;
                         delete paginatedFilters.linkedId;
+                      }
+                      
+                      if (paginatedFilters.ipAddress) {
+                        paginatedFilters.ip_address = paginatedFilters.ipAddress;
+                        delete paginatedFilters.ipAddress;
                       }
                       
                       // Add date range if provided - convert to Unix timestamp in milliseconds

@@ -71,31 +71,27 @@ export async function POST(request) {
         
       // Search operations
       case 'searchEvents':
-        // Enhanced search with many filtering options
         const searchFilters = {
-          limit: filters?.limit || 20,
-          paginationKey: filters?.paginationKey,
-          linkedId: filters?.linkedId,
           visitorId: filters?.visitorId,
-          requestId: filters?.requestId,
-          // Time-based filters
-          createdGte: filters?.createdAfter ? new Date(filters.createdAfter).toISOString() : undefined,
-          createdLte: filters?.createdBefore ? new Date(filters.createdBefore).toISOString() : undefined,
+          linkedId: filters?.linkedId,
+          limit: filters?.limit || 10,
+          paginationKey: filters?.paginationKey,
           // Security filters
           suspect: filters?.suspect,
-          // Custom tags
-          tag: filters?.tag,
-          // IP address
-          ip: filters?.ip,
-          // Pagination and sorting
-          limitPerPage: filters?.limitPerPage,
+          // Time-based filters
+          start: filters?.start ? filters.start : undefined,
+          end: filters?.end ? filters.end : undefined,
+          //misc
+          reverse: filters?.reverse,
         };
         
-        // Remove undefined values
+        // Remove undefined values and empty strings
         Object.keys(searchFilters).forEach(key => 
-          searchFilters[key] === undefined && delete searchFilters[key]
+          (searchFilters[key] === undefined || searchFilters[key] === '') && delete searchFilters[key]
         );
         
+        console.log('Searching with filters:', searchFilters);
+        console.log('Raw filters received:', filters);
         result = await client.searchEvents(searchFilters);
         break;
         
