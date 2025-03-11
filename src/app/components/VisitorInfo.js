@@ -10,11 +10,6 @@ export default function VisitorInfo() {
     { immediate: true }
   )
 
-  //   <div>
-
-  //   <p>Full visitor data:</p>
-  //   <pre>{error ? error.message : JSON.stringify(data, null, 2)}</pre>
-  // </div>
 
   return (
     <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg dark:bg-gray-800 transition-all">
@@ -51,14 +46,15 @@ export default function VisitorInfo() {
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">First seen</p>
             <p className="font-medium text-gray-800 dark:text-gray-200">
-              {new Date(data.firstSeenAt).toLocaleString()}
+              {new Date(data.firstSeenAt.global).toString()}
+              
             </p>
           </div>
 
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Last seen</p>
             <p className="font-medium text-gray-800 dark:text-gray-200">
-              {new Date(data.lastSeenAt).toLocaleString()}
+              {new Date(data.lastSeenAt.global).toString()}
             </p>
           </div>
         </div>
