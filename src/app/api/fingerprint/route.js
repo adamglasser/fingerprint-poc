@@ -56,18 +56,6 @@ export async function POST(request) {
         result = await client.getEvent(requestId);
         break;
         
-      case 'updateEvent':
-        if (!requestId) {
-          return NextResponse.json({ error: 'Missing requestId' }, { status: 400 });
-        }
-        
-        const updateData = {};
-        if (linkedId !== undefined) updateData.linkedId = linkedId;
-        if (tag !== undefined) updateData.tag = tag;
-        if (suspect !== undefined) updateData.suspect = suspect;
-        
-        result = await client.updateEvent(requestId, updateData);
-        break;
         
       // Search operations
       case 'searchEvents':
@@ -78,6 +66,7 @@ export async function POST(request) {
           paginationKey: filters?.paginationKey,
           // Security filters
           suspect: filters?.suspect,
+          bot: filters?.bot,
           // Time-based filters
           start: filters?.start ? filters.start : undefined,
           end: filters?.end ? filters.end : undefined,
@@ -130,7 +119,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Fingerprint API error:', error);
     
-    // Handle specific error types
+    // Handle other error types
     if (error.statusCode) {
       return NextResponse.json(
         { error: error.message, statusCode: error.statusCode },
