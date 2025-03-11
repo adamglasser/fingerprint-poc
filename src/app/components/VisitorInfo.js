@@ -114,7 +114,6 @@ export default function VisitorInfo() {
   const handleSearchEvents = () => {
     const filters = { ...searchFilters };
     
-    // Convert parameter names to match the API's expected format
     if (filters.visitorId) {
       filters.visitor_id = filters.visitorId;
       delete filters.visitorId;

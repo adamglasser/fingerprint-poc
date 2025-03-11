@@ -1,7 +1,5 @@
-import Image from "next/image";
 import {
   FpjsProvider,
-  FingerprintJSPro,
 } from '@fingerprintjs/fingerprintjs-pro-react'
 import VisitorInfo from './components/VisitorInfo'
 
