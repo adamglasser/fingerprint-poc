@@ -1,5 +1,11 @@
-name = "fingerprint-poc-v2"
+name = "fingerprint-poc"
 compatibility_date = "2023-12-01"
+
 [build]
 command = "npm run build"
-pages_build_output_dir = ".next"
+
+[site]
+bucket = ".next"
+
+[build.upload]
+format = "service-worker"
