@@ -1,15 +1,13 @@
 import { FingerprintJsServerApiClient, Region } from '@fingerprintjs/fingerprintjs-pro-server-api';
 import { NextResponse } from 'next/server';
 
-// Initialize the Fingerprint client (only once)
-const client = new FingerprintJsServerApiClient({
-  apiKey: process.env.FINGERPRINT_SECRET_API_KEY,
-  region: Region.Global, // Change to your region if needed
-});
-
-// Debug your environment variable
-// console.log("API Key available in environment:", !!process.env.FINGERPRINT_SECRET_API_KEY);
-// console.log("API Key length:", process.env.FINGERPRINT_SECRET_API_KEY?.length);
+// Function to initialize the Fingerprint client
+function getFingerPrintClient() {
+  return new FingerprintJsServerApiClient({
+    apiKey: process.env.FINGERPRINT_SECRET_API_KEY,
+    region: Region.Global,
+  });
+}
 
 export async function POST(request) {
   try {
@@ -24,10 +22,12 @@ export async function POST(request) {
       suspect 
     } = await request.json();
     
-    // Prevent API access without proper data
     if (!action) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
+    
+    // Initialize the client only when a request is made
+    const client = getFingerPrintClient();
     
     let result;
     
