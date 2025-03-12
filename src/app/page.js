@@ -1,5 +1,6 @@
 import {
   FpjsProvider,
+  FingerprintJSPro
 } from '@fingerprintjs/fingerprintjs-pro-react'
 import VisitorInfo from './components/VisitorInfo'
 import { ChevronRight } from 'lucide-react'
@@ -10,8 +11,16 @@ export default function Home() {
     <FpjsProvider
       loadOptions={{
         apiKey: process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY,
-        endpoint: process.env.NEXT_PUBLIC_ENDPOINT,
-        scriptUrlPattern: process.env.NEXT_PUBLIC_SCRIPT_URL_PATTERN,
+        //endpoint: process.env.NEXT_PUBLIC_ENDPOINT,
+        // endpoint: [
+        //   "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/uVlgRwunV0GJub6T",
+        //   FingerprintJSPro.defaultEndpoint
+        // ],
+        //scriptUrlPattern: process.env.NEXT_PUBLIC_SCRIPT_URL_PATTERN,
+        endpoint: "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/uVlgRwunV0GJub6T",
+        scriptUrlPattern: [
+          "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/wFTswDFEmr2aX2ki?apiKey=<apiKey>&version=<version>&loaderVersion=<loaderVersion>",
+        ]
       }}
     >
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
