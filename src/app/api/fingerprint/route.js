@@ -79,8 +79,8 @@ export async function POST(request) {
           (searchFilters[key] === undefined || searchFilters[key] === '') && delete searchFilters[key]
         );
         
-        console.log('Searching with filters:', searchFilters);
-        console.log('Raw filters received:', filters);
+        //console.log('Searching with filters:', searchFilters);
+        //console.log('Raw filters received:', filters);
         result = await client.searchEvents(searchFilters);
         break;
         

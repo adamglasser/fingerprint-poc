@@ -815,10 +815,10 @@ export default function VisitorInfo() {
           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
             <p className="mb-1"><span className="font-medium">Visitor ID:</span> {visitorData.visitorId}</p>
             <p className="mb-1"><span className="font-medium">Request ID:</span> {visitorData.requestId}</p>
-            <p className="mb-1"><span className="font-medium">Browser:</span> {visitorData.browserName}</p>
-            <p className="mb-1"><span className="font-medium">Platform:</span> {visitorData.os}</p>
-            <p className="mb-1"><span className="font-medium">Device:</span> {visitorData.device}</p>
+            <p className="mb-1"><span className="font-medium">visitorFound:</span> {visitorData.visitorFound.toString().toUpperCase()}</p>
+            <p className="mb-1"><span className="font-medium">confidence:</span> {visitorData.confidence.score}</p>
             {/* Add more client-side data fields as needed */}
+            {/* {console.log(visitorData)} */}
             
             <div className="mt-3 flex flex-wrap gap-2">
               <button
