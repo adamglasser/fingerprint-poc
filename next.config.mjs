@@ -5,6 +5,6 @@ const nextConfig = {
   
     // Conditionally apply the standalone output setting only during Cloudflare builds
     ...(process.env.CF_PAGES === "1" ? { output: 'standalone' } : {}),
-  }
+  };
   
-  module.exports = nextConfig
+  export default nextConfig;
