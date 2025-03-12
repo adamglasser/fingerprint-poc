@@ -165,15 +165,15 @@ export default function VisitorInfo() {
   // Render different content based on active tab
   const renderTabContent = () => {
     if (serverLoading) {
-      return <p className="text-gray-500 dark:text-gray-400">Loading data...</p>;
+      return <p className="text-[var(--gray-6)] dark:text-[var(--gray-4)]">Loading data...</p>;
     }
     
     if (serverError) {
-      return <p className="text-red-500">Error: {serverError}</p>;
+      return <p className="text-[var(--pink-8)]">Error: {serverError}</p>;
     }
     
     if (!serverData) {
-      return <p className="text-gray-500 dark:text-gray-400">No data available</p>;
+      return <p className="text-[var(--gray-6)] dark:text-[var(--gray-4)]">No data available</p>;
     }
     
     switch (activeTab) {
@@ -181,16 +181,16 @@ export default function VisitorInfo() {
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Visitor Overview</h4>
+              <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                <h4 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Visitor Overview</h4>
                 <p><span className="font-medium">Visit Count:</span> {serverData.visitCount || 0}</p>
                 {serverData.firstSeen && <p><span className="font-medium">First Seen:</span> {new Date(serverData.firstSeen).toLocaleString()}</p>}
                 {serverData.lastSeen && <p><span className="font-medium">Last Seen:</span> {new Date(serverData.lastSeen).toLocaleString()}</p>}
               </div>
               
               {(serverData.latestEventDetails || serverData.recentVisits?.[0]) && (
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Latest Event</h4>
+                <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                  <h4 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Latest Event</h4>
                   {(() => {
                     // Get event data from either source
                     const rawEvent = serverData.latestEventDetails || serverData.recentVisits?.[0] || {};
@@ -241,7 +241,7 @@ export default function VisitorInfo() {
                         )}
                         
                         {/* Security indicators */}
-                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <div className="mt-2 pt-2 border-t border-[var(--border)] dark:border-[var(--gray-7)]">
                           {incognito && <p><span className="font-medium">Incognito:</span> Yes</p>}
                           {isBot && <p><span className="font-medium">Bot:</span> Yes</p>}
                           {isVpn && <p><span className="font-medium">VPN:</span> Yes</p>}
@@ -668,8 +668,8 @@ export default function VisitorInfo() {
             {(serverData.requestId || serverData.products?.identification?.data?.requestId) ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                    <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Basic Information</h5>
+                  <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                    <h5 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Basic Information</h5>
                     <p><span className="font-medium">Request ID:</span> {serverData.requestId || serverData.products?.identification?.data?.requestId || serverData.products?.botd?.data?.requestId}</p>
                     
                     {/* Try multiple possible locations for timestamp */}
@@ -688,8 +688,8 @@ export default function VisitorInfo() {
                     )}
                   </div>
                   
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                    <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Browser & Device</h5>
+                  <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                    <h5 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Browser & Device</h5>
                     {/* Browser info - try multiple possible locations */}
                     {(serverData.browserDetails?.browserName || serverData.products?.identification?.data?.browserDetails?.browserName) && (
                       <p><span className="font-medium">Browser:</span> {
@@ -726,8 +726,8 @@ export default function VisitorInfo() {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                    <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">IP Information</h5>
+                  <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                    <h5 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">IP Information</h5>
                     {/* IP - try multiple possible locations */}
                     {(serverData.ip || serverData.products?.identification?.data?.ip || serverData.products?.ipInfo?.data?.v4?.address) && (
                       <p><span className="font-medium">IP Address:</span> {
@@ -746,8 +746,8 @@ export default function VisitorInfo() {
                     )}
                   </div>
                   
-                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                    <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Security Signals</h5>
+                  <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                    <h5 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Security Signals</h5>
                     {/* Bot detection */}
                     {serverData.products?.botd?.data?.bot?.result && (
                       <p><span className="font-medium">Bot:</span> {serverData.products.botd.data.bot.result}</p>
@@ -770,8 +770,8 @@ export default function VisitorInfo() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                  <h5 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Full Event Data</h5>
+                <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md border border-[var(--border)]">
+                  <h5 className="font-medium text-[var(--gray-9)] dark:text-[var(--gray-3)] mb-2">Full Event Data</h5>
                   <div className="overflow-auto max-h-96">
                     <pre className="text-sm text-gray-800 dark:text-gray-200">
                       {JSON.stringify(serverData, null, 2)}
@@ -787,7 +787,7 @@ export default function VisitorInfo() {
       
       default:
         return (
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md overflow-auto max-h-96">
+          <div className="bg-[var(--gray-1)] dark:bg-[var(--gray-9)] p-4 rounded-md overflow-auto max-h-96">
             <pre className="text-sm text-gray-800 dark:text-gray-200">
               {JSON.stringify(serverData, null, 2)}
             </pre>
@@ -797,104 +797,96 @@ export default function VisitorInfo() {
   };
 
   return (
-    <div className="w-full max-w-6xl bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
-        Visitor Information
-      </h2>
-      
-      {/* Client-side data section */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Client-side Data
-        </h3>
-        {isLoading ? (
-          <p className="text-gray-500 dark:text-gray-400">Loading visitor data...</p>
-        ) : error ? (
-          <p className="text-red-500">Error: {error.message}</p>
-        ) : visitorData ? (
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-            <p className="mb-1"><span className="font-medium">Visitor ID:</span> {visitorData.visitorId}</p>
-            <p className="mb-1"><span className="font-medium">Request ID:</span> {visitorData.requestId}</p>
-            <p className="mb-1"><span className="font-medium">visitorFound:</span> {visitorData.visitorFound.toString().toUpperCase()}</p>
-            <p className="mb-1"><span className="font-medium">confidence:</span> {visitorData.confidence.score}</p>
-            {/* Add more client-side data fields as needed */}
-            {/* {console.log(visitorData)} */}
-            
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                onClick={() => fetchServerData(visitorData.visitorId)}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
-              >
-                Refresh Server Data
-              </button>
-              
-            </div>
-          </div>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400">No visitor data available</p>
-        )}
-      </div>
-      
-      {/* Tab navigation */}
-      {visitorData?.visitorId && (
-        <div className="mb-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8" aria-label="Tabs">
-              <button
-                onClick={() => handleTabChange('summary')}
-                className={`${
-                  activeTab === 'summary'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                Summary
-              </button>
-              
-              <button
-                onClick={() => handleTabChange('visits')}
-                className={`${
-                  activeTab === 'visits'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                Visit History
-              </button>
-              
-              <button
-                onClick={() => handleTabChange('search')}
-                className={`${
-                  activeTab === 'search'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                Search Events
-              </button>
-              
-              <button
-                onClick={() => handleTabChange('eventDetails')}
-                className={`${
-                  activeTab === 'eventDetails'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-              >
-                Current Event Details
-              </button>
-            </nav>
-          </div>
+    <div className="w-full max-w-4xl mx-auto bg-[var(--background)] dark:bg-[var(--background)] shadow-lg rounded-xl overflow-hidden border border-[var(--border)]">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="p-6 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--primary)] mx-auto"></div>
+          <p className="mt-2 text-[var(--gray-6)] dark:text-[var(--gray-4)]">Loading visitor data...</p>
         </div>
       )}
       
-      {/* Server-side data section */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-4">
-          Server-side Data
-        </h3>
-        {renderTabContent()}
-      </div>
+      {/* Error State */}
+      {error && (
+        <div className="p-6 text-center">
+          <p className="text-[var(--pink-8)]">Error: {error.message}</p>
+        </div>
+      )}
+      
+      {/* Visitor Data Display */}
+      {visitorData && !isLoading && !error && (
+        <div>
+          {/* Visitor ID Header */}
+          <div className="bg-[var(--gray-2)] dark:bg-[var(--gray-8)] p-4 border-b border-[var(--border)]">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--foreground)]">Visitor ID</h2>
+                <p className="font-mono text-sm text-[var(--gray-7)] dark:text-[var(--gray-4)] break-all">
+                  {visitorData.visitorId}
+                </p>
+              </div>
+              <div className="mt-3 md:mt-0">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--orange-2)] text-[var(--orange-8)]">
+                  Confidence: {Math.round(visitorData.confidence * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Tabs */}
+          <div className="border-b border-[var(--border)]">
+            <nav className="flex" aria-label="Tabs">
+              <button
+                onClick={() => handleTabChange('summary')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'summary'
+                    ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+                    : 'text-[var(--gray-6)] hover:text-[var(--gray-8)] dark:text-[var(--gray-4)] dark:hover:text-[var(--gray-2)]'
+                }`}
+              >
+                Summary
+              </button>
+              <button
+                onClick={() => handleTabChange('visits')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'visits'
+                    ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+                    : 'text-[var(--gray-6)] hover:text-[var(--gray-8)] dark:text-[var(--gray-4)] dark:hover:text-[var(--gray-2)]'
+                }`}
+              >
+                Visits
+              </button>
+              <button
+                onClick={() => handleTabChange('search')}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === 'search'
+                    ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+                    : 'text-[var(--gray-6)] hover:text-[var(--gray-8)] dark:text-[var(--gray-4)] dark:hover:text-[var(--gray-2)]'
+                }`}
+              >
+                Search
+              </button>
+              {visitorData.requestId && (
+                <button
+                  onClick={() => handleTabChange('eventDetails')}
+                  className={`px-4 py-2 text-sm font-medium ${
+                    activeTab === 'eventDetails'
+                      ? 'border-b-2 border-[var(--primary)] text-[var(--primary)]'
+                      : 'text-[var(--gray-6)] hover:text-[var(--gray-8)] dark:text-[var(--gray-4)] dark:hover:text-[var(--gray-2)]'
+                  }`}
+                >
+                  Current Event
+                </button>
+              )}
+            </nav>
+          </div>
+          
+          {/* Tab Content */}
+          <div className="p-4">
+            {renderTabContent()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

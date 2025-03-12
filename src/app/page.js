@@ -11,14 +11,14 @@ export default function Home() {
         apiKey: process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY,
       }}
     >
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-[var(--background)] dark:bg-[var(--background)]">
         <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h1 className="text-4xl font-bold text-[var(--foreground)] dark:text-[var(--foreground)] mb-4">
               Fingerprint Visitor Demo
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
+            <p className="text-lg text-[var(--gray-6)] dark:text-[var(--gray-4)]">
               Identifying and tracking visitors across sessions
             </p>
           </div>
@@ -29,13 +29,13 @@ export default function Home() {
             
             {/* Additional Info */}
             <div className="mt-12 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-[var(--gray-5)] dark:text-[var(--gray-5)]">
                 Powered by{' '}
                 <a 
                   href="https://fingerprint.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                  className="text-[var(--primary)] hover:text-[var(--primary-hover)] dark:text-[var(--primary)] dark:hover:text-[var(--primary-hover)]"
                 >
                   Fingerprint
                 </a>
