@@ -1,26 +1,116 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors - Orange */
+  --orange-1: #FDF4F1;
+  --orange-2: #FFEADC;
+  --orange-3: #FFDCC8;
+  --orange-4: #FFCAB5;
+  --orange-5: #FEA88C;
+  --orange-6: #F04405; /* Primary Brand Color - matches SVG */
+  --orange-7: #F35B22;
+  --orange-8: #BE400F;
+  --orange-9: #773B15;
+  --orange-10: #331105;
+
+  /* Neutral Colors - Gray */
+  --gray-1: #F8F8F6;
+  --gray-2: #F0F0ED;
+  --gray-3: #E4E5E1;
+  --gray-4: #D9D9D6;
+  --gray-5: #C1C1BE;
+  --gray-6: #A0A09D;
+  --gray-7: #8C8C89;
+  --gray-8: #6B6C69;
+  --gray-9: #4A4A46;
+  --gray-10: #181916;
+
+  /* Secondary Colors - Teal */
+  --teal-1: #F3F9F9;
+  --teal-2: #DFFBF2;
+  --teal-3: #CBF2E9;
+  --teal-4: #B1E4DB;
+  --teal-5: #85CEC0;
+  --teal-6: #47B09C;
+  --teal-7: #319D8C;
+  --teal-8: #05796E;
+  --teal-9: #033A47;
+  --teal-10: #09201C;
+
+  /* Secondary Colors - Purple */
+  --purple-1: #F8F7FE;
+  --purple-2: #F1F0FE;
+  --purple-3: #E6E3FD;
+  --purple-4: #D8D2F8;
+  --purple-5: #BEB4FC;
+  --purple-6: #A394EB;
+  --purple-7: #9077DA;
+  --purple-8: #735FBF;
+  --purple-9: #4D3B8B;
+  --purple-10: #201342;
+
+  /* Secondary Colors - Pink */
+  --pink-1: #FEF7F9;
+  --pink-2: #FFEBEF;
+  --pink-3: #FFDCE4;
+  --pink-4: #F8CBD6;
+  --pink-5: #F69FBB;
+  --pink-6: #F1739D;
+  --pink-7: #E9588D;
+  --pink-8: #C2336C;
+  --pink-9: #8B1E4A;
+  --pink-10: #631634;
+
+  /* Base UI colors */
+  --background: var(--gray-1);
+  --foreground: var(--gray-10);
+  --primary: var(--orange-6);
+  --primary-hover: var(--orange-7);
+  --primary-foreground: white;
+  --secondary: var(--teal-6);
+  --secondary-hover: var(--teal-7);
+  --secondary-foreground: white;
+  --accent: var(--purple-6);
+  --accent-hover: var(--purple-7);
+  --accent-foreground: white;
+  --border: var(--gray-3);
+  --input: var(--gray-2);
+  --ring: var(--orange-6);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: var(--gray-10);
+    --foreground: var(--gray-1);
+    --primary: var(--orange-6);
+    --primary-hover: var(--orange-5);
+    --secondary: var(--teal-6);
+    --secondary-hover: var(--teal-5);
+    --accent: var(--purple-6);
+    --accent-hover: var(--purple-5);
+    --border: var(--gray-7);
+    --input: var(--gray-8);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
 }
