@@ -19,7 +19,7 @@ const LOCAL_DB_PATH = isDevelopment || isCliMode
   : path.resolve('/tmp/fingerprint.db');
 
 // Blob storage key for the database file
-const BLOB_KEY = 'fingerprint-database.db';
+const BLOB_KEY = 'fingerprint-database';
 
 // Helper function to download the database from Blob storage
 async function downloadDbFromBlob() {
@@ -69,15 +69,25 @@ async function downloadDbFromBlob() {
     }
     console.log('BLOB_READ_WRITE_TOKEN found in environment variables');
 
-    // List blobs to find our database file
-    console.log(`Listing blobs with prefix: ${BLOB_KEY}`);
-    const { blobs } = await list({ prefix: BLOB_KEY, token });
-    console.log(`Found ${blobs.length} blobs matching prefix: ${BLOB_KEY}`);
+    // List all blobs without filtering by prefix
+    console.log('Listing all blobs');
+    const { blobs } = await list({ token });
+    console.log(`Found ${blobs.length} total blobs`);
     
-    const dbBlob = blobs.find(blob => blob.pathname === BLOB_KEY);
+    // Find all blobs that start with fingerprint-database
+    const dbBlobs = blobs.filter(blob => 
+      blob.pathname.startsWith('fingerprint-database')
+    );
+    console.log(`Found ${dbBlobs.length} database blobs`);
     
-    if (dbBlob) {
-      console.log(`Found database blob: ${dbBlob.pathname}, size: ${dbBlob.size} bytes`);
+    if (dbBlobs.length > 0) {
+      // Sort by creation time (newest first)
+      dbBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+      
+      // Use the most recently created blob
+      const dbBlob = dbBlobs[0];
+      
+      console.log(`Selected newest database blob: ${dbBlob.pathname}, size: ${dbBlob.size} bytes, uploaded: ${dbBlob.uploadedAt}`);
       
       // Get the blob URL
       const blobUrl = dbBlob.url;
@@ -103,7 +113,7 @@ async function downloadDbFromBlob() {
       // Pipe the blob data to the local file
       console.log(`Writing blob data to: ${LOCAL_DB_PATH}`);
       await pipeline(blobStream, fileStream);
-      console.log(`Successfully downloaded database from Blob storage with key: ${BLOB_KEY}`);
+      console.log(`Successfully downloaded database from Blob storage: ${dbBlob.pathname}`);
       
       // Verify the file was created
       try {
@@ -113,7 +123,7 @@ async function downloadDbFromBlob() {
         console.error(`Error verifying database file: ${statError.message}`);
       }
     } else {
-      console.log(`No database blob found with key: ${BLOB_KEY}`);
+      console.log('No database blobs found');
       console.log('Available blobs:');
       blobs.forEach((blob, index) => {
         console.log(`${index + 1}: ${blob.pathname} (${blob.size} bytes)`);
@@ -137,8 +147,11 @@ async function uploadDbToBlob() {
     }
     
     // Production mode - upload to Vercel Blob
+    console.log('Production mode: uploading database to Vercel Blob');
+    
     // Read the database file
     const fileBuffer = await fs.readFile(LOCAL_DB_PATH);
+    console.log(`Read database file, size: ${fileBuffer.length} bytes`);
     
     // Get the token from environment
     const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -148,13 +161,45 @@ async function uploadDbToBlob() {
       return false;
     }
     
-    // Upload to Blob storage
-    await put(BLOB_KEY, fileBuffer, {
+    // First, list all existing blobs to find and potentially delete old ones
+    console.log('Listing existing blobs before upload');
+    const { blobs } = await list({ token });
+    
+    // Find all fingerprint-database blobs
+    const dbBlobs = blobs.filter(blob => 
+      blob.pathname.startsWith('fingerprint-database')
+    );
+    
+    console.log(`Found ${dbBlobs.length} existing database blobs`);
+    
+    // If there are too many blobs, delete some of the older ones
+    if (dbBlobs.length > 10) {
+      console.log('Too many database blobs, cleaning up older ones');
+      
+      // Sort by creation time (oldest first)
+      dbBlobs.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+      
+      // Keep the 5 newest blobs, delete the rest
+      const blobsToDelete = dbBlobs.slice(0, dbBlobs.length - 5);
+      
+      for (const blob of blobsToDelete) {
+        try {
+          console.log(`Deleting old blob: ${blob.pathname}`);
+          await del(blob.pathname, { token });
+        } catch (deleteError) {
+          console.error(`Error deleting blob ${blob.pathname}:`, deleteError);
+        }
+      }
+    }
+    
+    // Upload to Blob storage with the simple name
+    console.log(`Uploading database to Blob storage with key: fingerprint-database`);
+    const result = await put('fingerprint-database', fileBuffer, {
       access: 'public',
       token
     });
     
-    console.log(`Successfully uploaded database to Blob storage with key: ${BLOB_KEY}`);
+    console.log(`Successfully uploaded database to Blob storage: ${result.pathname}, size: ${result.size} bytes, URL: ${result.url}`);
     return true;
   } catch (error) {
     console.error('Error uploading database to Blob storage:', error);
