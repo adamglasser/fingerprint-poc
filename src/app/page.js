@@ -79,7 +79,7 @@ export default function Home() {
                   href="/webhooks"
                   className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                 >
-                  View All Events For This Visitor
+                  View All Events
                   <ExternalLink className="ml-2 w-4 h-4" />
                 </Link>
               </div>
