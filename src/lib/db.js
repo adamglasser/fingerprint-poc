@@ -42,7 +42,7 @@ async function downloadDbFromBlob() {
     
     // Production mode - use Vercel Blob
     // Check if the local file already exists and remove it
-    try {
+    try {      
       await fs.access(LOCAL_DB_PATH);
       await fs.unlink(LOCAL_DB_PATH);
     } catch (error) {
@@ -52,8 +52,16 @@ async function downloadDbFromBlob() {
     // Ensure the directory exists
     await fs.mkdir(path.dirname(LOCAL_DB_PATH), { recursive: true });
 
+    // Get the token from environment
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    if (!token) {
+      console.error('BLOB_READ_WRITE_TOKEN not found in environment variables');
+      return false;
+    }
+
     // List blobs to find our database file
-    const { blobs } = await list({ prefix: BLOB_KEY });
+    const { blobs } = await list({ prefix: BLOB_KEY, token });
     const dbBlob = blobs.find(blob => blob.pathname === BLOB_KEY);
     
     if (dbBlob) {
@@ -77,6 +85,7 @@ async function downloadDbFromBlob() {
       
       // Pipe the blob data to the local file
       await pipeline(blobStream, fileStream);
+      console.log(`Successfully downloaded database from Blob storage with key: ${BLOB_KEY}`);
     }
     
     return true;
@@ -99,11 +108,21 @@ async function uploadDbToBlob() {
     // Read the database file
     const fileBuffer = await fs.readFile(LOCAL_DB_PATH);
     
+    // Get the token from environment
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    
+    if (!token) {
+      console.error('BLOB_READ_WRITE_TOKEN not found in environment variables');
+      return false;
+    }
+    
     // Upload to Blob storage
     await put(BLOB_KEY, fileBuffer, {
       access: 'public',
+      token
     });
     
+    console.log(`Successfully uploaded database to Blob storage with key: ${BLOB_KEY}`);
     return true;
   } catch (error) {
     console.error('Error uploading database to Blob storage:', error);
