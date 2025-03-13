@@ -17,23 +17,23 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-export default function WebhookEvents({ visitorId }) {
-  // Only use the hook if we need the client-side visitor ID
-  const needsClientSideId = visitorId === '__CLIENT_SIDE__';
-  
-  // Use a conditional hook pattern
-  const visitorDataHook = needsClientSideId ? useVisitorData() : { 
-    isLoading: false, 
-    error: null, 
-    data: null 
-  };
-  
+// Create two separate components to avoid conditional hook calls
+function ClientSideWebhookEvents() {
   const {
     isLoading: fpjsLoading,
     error: fpjsError,
     data: visitorData,
-  } = visitorDataHook;
+  } = useVisitorData();
   
+  return <WebhookEventsBase 
+    visitorId={visitorData?.visitorId} 
+    isLoadingVisitorId={fpjsLoading} 
+    visitorIdError={fpjsError} 
+    isClientSide={true} 
+  />;
+}
+
+function WebhookEventsBase({ visitorId, isLoadingVisitorId, visitorIdError, isClientSide }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -44,11 +44,6 @@ export default function WebhookEvents({ visitorId }) {
     hasMore: false
   });
   const [expandedEvent, setExpandedEvent] = useState(null);
-
-  // Determine the actual visitor ID to use
-  const effectiveVisitorId = needsClientSideId 
-    ? visitorData?.visitorId 
-    : visitorId;
 
   // Fetch webhook events
   const fetchEvents = async (offset = 0) => {
@@ -61,8 +56,8 @@ export default function WebhookEvents({ visitorId }) {
         offset: offset
       });
       
-      if (effectiveVisitorId) {
-        params.append('visitorId', effectiveVisitorId);
+      if (visitorId) {
+        params.append('visitorId', visitorId);
       }
       
       const response = await fetch(`/api/webhook-events?${params.toString()}`);
@@ -86,14 +81,13 @@ export default function WebhookEvents({ visitorId }) {
   // Load events on component mount or when visitorId changes
   useEffect(() => {
     // If we're waiting for client-side visitor ID, don't fetch yet
-    if (needsClientSideId && !visitorData?.visitorId) {
-      if (!fpjsLoading) return; // Only show loading if we're actually loading the visitor ID
-      return;
+    if (isClientSide && !visitorId && isLoadingVisitorId) {
+      return; // Still loading the visitor ID
     }
     
-    // If we have a visitor ID (either direct or from client), fetch events
+    // If we have a visitor ID or we're showing all events, fetch them
     fetchEvents(0);
-  }, [effectiveVisitorId, fpjsLoading, needsClientSideId]);
+  }, [visitorId, isLoadingVisitorId, isClientSide, pagination.limit]);
 
   // Handle pagination
   const handleNextPage = () => {
@@ -129,7 +123,7 @@ export default function WebhookEvents({ visitorId }) {
   };
 
   // Show loading when waiting for client-side visitor ID
-  if (needsClientSideId && fpjsLoading) {
+  if (isClientSide && isLoadingVisitorId) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
@@ -139,12 +133,12 @@ export default function WebhookEvents({ visitorId }) {
   }
 
   // Show error if there was an error getting the visitor ID
-  if (needsClientSideId && fpjsError) {
+  if (isClientSide && visitorIdError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
         <p className="text-red-500 font-medium text-lg mb-2">Error Identifying Visitor</p>
-        <p className="text-gray-600 dark:text-gray-400 text-center">{fpjsError.message}</p>
+        <p className="text-gray-600 dark:text-gray-400 text-center">{visitorIdError.message}</p>
       </div>
     );
   }
@@ -179,7 +173,7 @@ export default function WebhookEvents({ visitorId }) {
       <div className="flex flex-col items-center justify-center py-12">
         <Info className="w-10 h-10 text-gray-400 mb-4" />
         <p className="text-gray-500 dark:text-gray-400">No webhook events found</p>
-        {effectiveVisitorId && (
+        {visitorId && (
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
             No events have been received for this visitor ID yet
           </p>
@@ -192,7 +186,7 @@ export default function WebhookEvents({ visitorId }) {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-          Webhook Events {pagination.total > 0 && `(${pagination.total})`}
+          {visitorId ? 'Visitor Webhook Events' : 'All Webhook Events'} {pagination.total > 0 && `(${pagination.total})`}
         </h3>
         <div className="flex items-center space-x-2">
           <button
@@ -329,4 +323,13 @@ export default function WebhookEvents({ visitorId }) {
       )}
     </div>
   );
+}
+
+// Main export component that decides which version to render
+export default function WebhookEvents({ visitorId }) {
+  if (visitorId === '__CLIENT_SIDE__') {
+    return <ClientSideWebhookEvents />;
+  }
+  
+  return <WebhookEventsBase visitorId={visitorId} isClientSide={false} />;
 } 

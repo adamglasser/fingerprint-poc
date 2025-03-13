@@ -6,6 +6,7 @@ import VisitorInfo from './components/VisitorInfo'
 import WebhookEvents from './components/WebhookEvents'
 import { ChevronRight, ExternalLink, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function Home() {
   return (
@@ -74,13 +75,13 @@ export default function Home() {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Webhook Events
                 </h2>
-                <a 
+                <Link 
                   href="/webhooks"
                   className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
                 >
-                  View All Events
+                  View All Events For This Visitor
                   <ExternalLink className="ml-2 w-4 h-4" />
-                </a>
+                </Link>
               </div>
               
               {/* This component will show webhook events for the current visitor */}

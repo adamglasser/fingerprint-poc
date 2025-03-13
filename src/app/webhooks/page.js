@@ -1,5 +1,6 @@
 import WebhookEvents from '../components/WebhookEvents';
 import { AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Webhook Events - Fingerprint Visitor Demo',
@@ -42,12 +43,12 @@ export default function WebhooksPage() {
 
         {/* Back to Home */}
         <div className="text-center mt-8">
-          <a 
+          <Link 
             href="/"
             className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
           >
             Back to Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>
