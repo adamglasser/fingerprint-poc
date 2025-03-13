@@ -24,6 +24,8 @@ const BLOB_KEY = 'fingerprint-database.db';
 // Helper function to download the database from Blob storage
 async function downloadDbFromBlob() {
   try {
+    console.log(`Starting downloadDbFromBlob, environment: ${isDevelopment ? 'development' : 'production'}, CLI mode: ${isCliMode}`);
+    
     // In development mode or CLI mode, just use the local file
     if (isDevelopment || isCliMode) {
       // Ensure the directory exists
@@ -32,6 +34,7 @@ async function downloadDbFromBlob() {
       // Check if the file exists, if not, it will be created when the DB is opened
       try {
         await fs.access(LOCAL_DB_PATH);
+        console.log(`Local database file exists at: ${LOCAL_DB_PATH}`);
       } catch (error) {
         // File doesn't exist, which is fine for a new database
         console.log('Creating new local database file');
@@ -41,16 +44,21 @@ async function downloadDbFromBlob() {
     }
     
     // Production mode - use Vercel Blob
+    console.log('Production mode: attempting to download database from Vercel Blob');
+    
     // Check if the local file already exists and remove it
     try {      
       await fs.access(LOCAL_DB_PATH);
       await fs.unlink(LOCAL_DB_PATH);
+      console.log(`Removed existing temporary database file at: ${LOCAL_DB_PATH}`);
     } catch (error) {
       // File doesn't exist, which is fine
+      console.log(`No existing temporary database file at: ${LOCAL_DB_PATH}`);
     }
 
     // Ensure the directory exists
     await fs.mkdir(path.dirname(LOCAL_DB_PATH), { recursive: true });
+    console.log(`Ensured directory exists for: ${LOCAL_DB_PATH}`);
 
     // Get the token from environment
     const token = process.env.BLOB_READ_WRITE_TOKEN;
@@ -59,16 +67,24 @@ async function downloadDbFromBlob() {
       console.error('BLOB_READ_WRITE_TOKEN not found in environment variables');
       return false;
     }
+    console.log('BLOB_READ_WRITE_TOKEN found in environment variables');
 
     // List blobs to find our database file
+    console.log(`Listing blobs with prefix: ${BLOB_KEY}`);
     const { blobs } = await list({ prefix: BLOB_KEY, token });
+    console.log(`Found ${blobs.length} blobs matching prefix: ${BLOB_KEY}`);
+    
     const dbBlob = blobs.find(blob => blob.pathname === BLOB_KEY);
     
     if (dbBlob) {
+      console.log(`Found database blob: ${dbBlob.pathname}, size: ${dbBlob.size} bytes`);
+      
       // Get the blob URL
       const blobUrl = dbBlob.url;
+      console.log(`Blob URL: ${blobUrl}`);
       
       // Download the blob content
+      console.log('Downloading blob content...');
       const response = await fetch(blobUrl);
       if (!response.ok) {
         throw new Error(`Failed to download blob: ${response.statusText}`);
@@ -76,6 +92,7 @@ async function downloadDbFromBlob() {
       
       // Get the blob data as an array buffer
       const blobData = await response.arrayBuffer();
+      console.log(`Downloaded blob data, size: ${blobData.byteLength} bytes`);
       
       // Create a readable stream from the blob
       const blobStream = Readable.from(Buffer.from(blobData));
@@ -84,8 +101,23 @@ async function downloadDbFromBlob() {
       const fileStream = fsSync.createWriteStream(LOCAL_DB_PATH);
       
       // Pipe the blob data to the local file
+      console.log(`Writing blob data to: ${LOCAL_DB_PATH}`);
       await pipeline(blobStream, fileStream);
       console.log(`Successfully downloaded database from Blob storage with key: ${BLOB_KEY}`);
+      
+      // Verify the file was created
+      try {
+        const stats = await fs.stat(LOCAL_DB_PATH);
+        console.log(`Verified database file: ${LOCAL_DB_PATH}, size: ${stats.size} bytes`);
+      } catch (statError) {
+        console.error(`Error verifying database file: ${statError.message}`);
+      }
+    } else {
+      console.log(`No database blob found with key: ${BLOB_KEY}`);
+      console.log('Available blobs:');
+      blobs.forEach((blob, index) => {
+        console.log(`${index + 1}: ${blob.pathname} (${blob.size} bytes)`);
+      });
     }
     
     return true;
