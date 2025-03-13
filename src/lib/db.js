@@ -19,7 +19,7 @@ const LOCAL_DB_PATH = isDevelopment || isCliMode
   : path.resolve('/tmp/fingerprint.db');
 
 // Blob storage key for the database file
-const BLOB_KEY = 'fingerprint-database';
+const BLOB_KEY = 'fingerprint-database.db';
 
 // Helper function to download the database from Blob storage
 async function downloadDbFromBlob() {
@@ -74,9 +74,9 @@ async function downloadDbFromBlob() {
     const { blobs } = await list({ token });
     console.log(`Found ${blobs.length} total blobs`);
     
-    // Find all blobs that start with fingerprint-database
+    // Find all blobs that start with the consistent key format (including .db extension)
     const dbBlobs = blobs.filter(blob => 
-      blob.pathname.startsWith('fingerprint-database')
+      blob.pathname.startsWith(`${BLOB_KEY}`)
     );
     console.log(`Found ${dbBlobs.length} database blobs`);
     
@@ -167,7 +167,7 @@ async function uploadDbToBlob() {
     
     // Find all fingerprint-database blobs
     const dbBlobs = blobs.filter(blob => 
-      blob.pathname.startsWith('fingerprint-database')
+      blob.pathname.startsWith(BLOB_KEY)
     );
     
     console.log(`Found ${dbBlobs.length} existing database blobs`);
@@ -192,9 +192,9 @@ async function uploadDbToBlob() {
       }
     }
     
-    // Upload to Blob storage with the simple name
-    console.log(`Uploading database to Blob storage with key: fingerprint-database`);
-    const result = await put('fingerprint-database', fileBuffer, {
+    // Upload to Blob storage with the consistent key format (including .db extension)
+    console.log(`Uploading database to Blob storage with key: ${BLOB_KEY}`);
+    const result = await put(`${BLOB_KEY}`, fileBuffer, {
       access: 'public',
       token
     });
