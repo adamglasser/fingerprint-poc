@@ -1,72 +1,109 @@
-# Fingerprint Visitor Demo
+# Fingerprint POC
 
-A Next.js application that demonstrates visitor identification and tracking using Fingerprint Pro.
-
-## Overview
-
-This application showcases how to implement visitor identification across browser sessions using Fingerprint Pro. It displays visitor information and demonstrates how to integrate Fingerprint's client-side SDK in a React/Next.js environment.
-
-## Features
-
-* Visitor identification and tracking
-* Display of visitor information
-* Responsive UI with dark mode support
-
-## Technology Stack
-
-* [Next.js](https://nextjs.org/)
-* [React](https://reactjs.org/)
-* [Fingerprint Pro](https://fingerprint.com/)
-* [Tailwind CSS](https://tailwindcss.com/)
-
-## Prerequisites
-
-* Node.js 14.x or higher
-* A Fingerprint Pro API key
+A proof-of-concept application for integrating with Fingerprint Pro for visitor identification and tracking.
 
 ## Setup
 
-1. Clone the repository:
-```
-git clone https://github.com/yourusername/fingerprint-visitor-demo.git
-cd fingerprint-visitor-demo
-```
-
+1. Clone the repository
 2. Install dependencies:
-```
-npm install
-# or
-yarn install
-```
+   ```bash
+   npm install
+   ```
+3. Create a `.env.local` file with your Fingerprint API keys:
+   ```
+   NEXT_PUBLIC_FINGERPRINT_PUBLIC_API_KEY=your_public_api_key
+   FINGERPRINT_SECRET_API_KEY=your_secret_api_key
+   BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+   ```
 
-3. Create a `.env.local` file in the root directory with your Fingerprint API key:
-```
-NEXT_PUBLIC_FINGERPRINT_API_KEY=your_fingerprint_api_key
-```
-
-## Running the Application
+## Development
 
 Run the development server:
-```
+
+```bash
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## How It Works
+## Database
 
-The application uses the Fingerprint Pro React SDK to identify visitors. The main components are:
+This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment.
 
-* `FpjsProvider`: Provides the Fingerprint context to the application
-* `VisitorInfo`: Displays information about the current visitor
+## CLI Tool
 
-## License
+A command-line interface tool is provided for managing visitor data. The CLI tool uses a local SQLite database stored in the `./data` directory.
 
-MIT
+### Available Commands
 
-## Resources
+```bash
+# List all visitors
+node scripts/fingerprint-cli.js listVisitors
 
-* [Fingerprint Documentation](https://dev.fingerprint.com/)
-* [Next.js Documentation](https://nextjs.org/docs)
+# Get details for a specific visitor
+node scripts/fingerprint-cli.js getVisitorEvents <visitorId>
+
+# Delete a visitor and all their events
+node scripts/fingerprint-cli.js deleteVisitor <visitorId>
+```
+
+## Webhook Testing with ngrok
+
+To test Fingerprint webhooks locally, you need to expose your local server to the internet using ngrok.
+
+### Setting up ngrok
+
+1. Install ngrok if you haven't already:
+   ```bash
+   npm install -g ngrok
+   ```
+
+2. Start your Next.js development server:
+   ```bash
+   npm run dev
+   ```
+
+3. In a separate terminal, start ngrok to create a tunnel to your local server:
+   ```bash
+   ngrok http 3000
+   ```
+
+4. ngrok will provide a public URL (e.g., `https://ea5d-69-145-58-111.ngrok-free.app`). Copy this URL.
+
+### Configuring Fingerprint Webhooks
+
+1. Go to your Fingerprint dashboard
+2. Navigate to the Webhooks section
+3. Add a new webhook with the ngrok URL + `/api/fingerprint-webhook` path:
+   ```
+   https://ea5d-69-145-58-111.ngrok-free.app/api/fingerprint-webhook
+   ```
+4. Select the events you want to receive (e.g., identification)
+5. Save the webhook configuration
+
+### Testing the Webhook
+
+You can test the webhook by sending a POST request to your ngrok URL:
+
+```bash
+curl -X POST https://ea5d-69-145-58-111.ngrok-free.app/api/fingerprint-webhook \
+  -H "Content-Type: application/json" \
+  -d '{"requestId":"test123","visitorId":"test-visitor-123"}'
+```
+
+After sending the webhook, you can verify it was received by checking the CLI:
+
+```bash
+node scripts/fingerprint-cli.js getVisitorEvents test-visitor-123
+```
+
+## Deployment
+
+This application is designed to be deployed on Vercel:
+
+```bash
+npm run build
+npm run deploy
+```
+
+In production, the application will use Vercel Blob for database storage.

@@ -10,6 +10,9 @@ function getFingerPrintClient() {
 }
 
 export async function POST(request) {
+  
+  
+  // App api operations
   try {
     const { 
       action, 
