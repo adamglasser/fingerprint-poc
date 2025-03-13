@@ -3,7 +3,8 @@ import {
   FingerprintJSPro
 } from '@fingerprintjs/fingerprintjs-pro-react'
 import VisitorInfo from './components/VisitorInfo'
-import { ChevronRight } from 'lucide-react'
+import WebhookEvents from './components/WebhookEvents'
+import { ChevronRight, ExternalLink, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
 
 export default function Home() {
@@ -25,6 +26,20 @@ export default function Home() {
     >
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+          {/* Warning Banner */}
+          <div className="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-md shadow-sm dark:bg-amber-900/30 dark:border-amber-600">
+            <div className="flex items-start">
+              <AlertTriangle className="w-6 h-6 text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-amber-800 dark:text-amber-200 font-medium text-lg">Public Data Warning</h3>
+                <p className="text-amber-700 dark:text-amber-300 mt-1">
+                  This demo publicly displays all visitor data and webhook events. In a production environment, 
+                  you should implement proper authentication and authorization to protect sensitive information.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Header with gradient underline */}
           <div className="text-center mb-16 relative">
             <div className="inline-block mb-6">
@@ -49,12 +64,29 @@ export default function Home() {
 
           {/* Main Content */}
           <div className="flex flex-col items-center justify-center mb-16">
-            <div className="w-full  rounded-xl p-6 dark:border-gray-700 mb-8">
-            <VisitorInfo />
+            <div className="w-full rounded-xl p-6 dark:border-gray-700 mb-8">
+              <VisitorInfo />
+            </div>
+            
+            {/* Webhook Events Section */}
+            <div className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Webhook Events
+                </h2>
+                <a 
+                  href="/webhooks"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                  View All Events
+                  <ExternalLink className="ml-2 w-4 h-4" />
+                </a>
+              </div>
+              
+              {/* This component will show webhook events for the current visitor */}
+              <WebhookEvents visitorId="__CLIENT_SIDE__" />
             </div>
               
-
-            
             {/* Call to action */}
             <a 
               href="https://github.com/adamglasser/fingerprint-poc" 

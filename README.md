@@ -26,6 +26,23 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Features
+
+### Visitor Identification
+
+The application uses Fingerprint Pro to identify visitors across sessions and devices. Each visitor is assigned a unique identifier that persists even when cookies are cleared or different browsers are used.
+
+### Webhook Events
+
+The application includes a webhook endpoint that receives events from Fingerprint Pro. These events are stored in the database and can be viewed in the UI:
+
+- **Main Page**: Shows webhook events for the current visitor
+- **Webhooks Page**: Shows all webhook events from all visitors
+
+To access the webhooks page, click the "View All Events" button on the main page or navigate to `/webhooks`.
+
+> **⚠️ Security Warning**: This demo publicly displays all visitor data and webhook events. In a production environment, you should implement proper authentication and authorization to protect sensitive information.
+
 ## Database
 
 This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment.
@@ -128,11 +145,16 @@ curl -X POST https://ea5d-69-145-58-111.ngrok-free.app/api/fingerprint-webhook \
   -d '{"requestId":"test123","visitorId":"test-visitor-123"}'
 ```
 
-After sending the webhook, you can verify it was received by checking the CLI:
+After sending the webhook, you can verify it was received by:
 
-```bash
-node scripts/fingerprint-cli.js getVisitorEvents test-visitor-123
-```
+1. Checking the CLI:
+   ```bash
+   node scripts/fingerprint-cli.js getVisitorEvents test-visitor-123
+   ```
+
+2. Viewing the webhook events in the UI:
+   - Navigate to the main page to see events for the current visitor
+   - Go to the `/webhooks` page to see all webhook events
 
 ## Deployment
 
