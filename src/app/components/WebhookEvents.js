@@ -18,11 +18,21 @@ import {
 } from 'lucide-react';
 
 export default function WebhookEvents({ visitorId }) {
+  // Only use the hook if we need the client-side visitor ID
+  const needsClientSideId = visitorId === '__CLIENT_SIDE__';
+  
+  // Use a conditional hook pattern
+  const visitorDataHook = needsClientSideId ? useVisitorData() : { 
+    isLoading: false, 
+    error: null, 
+    data: null 
+  };
+  
   const {
     isLoading: fpjsLoading,
     error: fpjsError,
     data: visitorData,
-  } = useVisitorData();
+  } = visitorDataHook;
   
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,7 +46,7 @@ export default function WebhookEvents({ visitorId }) {
   const [expandedEvent, setExpandedEvent] = useState(null);
 
   // Determine the actual visitor ID to use
-  const effectiveVisitorId = visitorId === '__CLIENT_SIDE__' 
+  const effectiveVisitorId = needsClientSideId 
     ? visitorData?.visitorId 
     : visitorId;
 
@@ -76,14 +86,14 @@ export default function WebhookEvents({ visitorId }) {
   // Load events on component mount or when visitorId changes
   useEffect(() => {
     // If we're waiting for client-side visitor ID, don't fetch yet
-    if (visitorId === '__CLIENT_SIDE__' && !visitorData?.visitorId) {
+    if (needsClientSideId && !visitorData?.visitorId) {
       if (!fpjsLoading) return; // Only show loading if we're actually loading the visitor ID
       return;
     }
     
     // If we have a visitor ID (either direct or from client), fetch events
     fetchEvents(0);
-  }, [effectiveVisitorId, fpjsLoading]);
+  }, [effectiveVisitorId, fpjsLoading, needsClientSideId]);
 
   // Handle pagination
   const handleNextPage = () => {
@@ -119,7 +129,7 @@ export default function WebhookEvents({ visitorId }) {
   };
 
   // Show loading when waiting for client-side visitor ID
-  if (visitorId === '__CLIENT_SIDE__' && fpjsLoading) {
+  if (needsClientSideId && fpjsLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
@@ -129,7 +139,7 @@ export default function WebhookEvents({ visitorId }) {
   }
 
   // Show error if there was an error getting the visitor ID
-  if (visitorId === '__CLIENT_SIDE__' && fpjsError) {
+  if (needsClientSideId && fpjsError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
         <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
