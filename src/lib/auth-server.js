@@ -3,7 +3,12 @@ import { redirect } from "next/navigation";
 import { authOptions } from "../app/api/auth/[...nextauth]/route";
 
 export async function getSession() {
-  return await getServerSession(authOptions);
+  try {
+    return await getServerSession(authOptions);
+  } catch (error) {
+    console.error("Error getting session:", error);
+    return null;
+  }
 }
 
 export async function requireAuth() {
