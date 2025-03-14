@@ -9,12 +9,47 @@ A proof-of-concept application for integrating with Fingerprint Pro for visitor 
    ```bash
    npm install
    ```
-3. Create a `.env.local` file with your Fingerprint API keys:
+3. Create a `.env.local` file with your Fingerprint API keys and authentication settings:
    ```
    NEXT_PUBLIC_FINGERPRINT_PUBLIC_API_KEY=your_public_api_key
    FINGERPRINT_SECRET_API_KEY=your_secret_api_key
    BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+   
+   # Authentication
+   NEXTAUTH_SECRET=your_nextauth_secret_key
+   NEXTAUTH_URL=http://localhost:3000
+   ADMIN_PASSWORD=your_admin_password
    ```
+
+## Authentication
+
+This application is protected with NextAuth.js authentication.
+
+### Login Credentials
+
+- **Username**: admin
+- **Password**: The password is set in the `.env.local` file as `ADMIN_PASSWORD`
+
+### Authentication Setup
+
+The authentication system uses NextAuth.js with a credentials provider. Only a single admin user is configured.
+
+To modify the authentication settings:
+
+1. Update the admin password in your `.env.local` file:
+   ```
+   ADMIN_PASSWORD=your_secure_password
+   ```
+
+2. For production deployment, make sure to set a strong, unique `NEXTAUTH_SECRET` value:
+   ```bash
+   # Generate a secure random string
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+3. When deploying to production, set these environment variables in your hosting platform.
+
+
 
 ## Development
 
@@ -167,7 +202,43 @@ npm run deploy
 
 In production, the application will use Vercel Blob for database storage.
 
+### Authentication in Production
+
+When deploying to production, make sure to set the following environment variables in your Vercel project settings:
+
+1. `NEXTAUTH_SECRET` - A secure random string for encrypting sessions
+2. `NEXTAUTH_URL` - The URL of your deployed application (e.g., `https://your-app.vercel.app`)
+3. `ADMIN_PASSWORD` - The password for the admin user
+
+For security best practices:
+- Generate a new secure random string for `NEXTAUTH_SECRET` for each environment
+- Use a strong, unique password for `ADMIN_PASSWORD`
+- Consider implementing additional authentication providers for production use
+
 ## Troubleshooting
+
+### Authentication Issues
+
+If you encounter issues with authentication:
+
+1. **Check Environment Variables**: Ensure `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `ADMIN_PASSWORD` are correctly set in your `.env.local` file or Vercel project settings.
+
+2. **Session Not Persisting**: If your session isn't persisting between page refreshes, check that your `NEXTAUTH_SECRET` is properly set and consistent.
+
+3. **Login Errors**: If you're getting errors during login:
+   - Verify that the username is exactly "admin"
+   - Check that the password matches the `ADMIN_PASSWORD` environment variable
+   - Look for error messages in the browser console or server logs
+
+4. **Middleware Errors**: If you're being redirected in a loop or getting middleware errors:
+   - Ensure the middleware configuration is correct
+   - Check that the public paths are properly defined
+   - Verify that the `NEXTAUTH_SECRET` is accessible in the middleware
+
+5. **API Route Errors**: If you're getting 500 errors from the NextAuth API routes:
+   - Check that you're using the correct version of NextAuth
+   - Ensure all required environment variables are set
+   - Look for error messages in the server logs
 
 ### Blob Storage Issues
 
