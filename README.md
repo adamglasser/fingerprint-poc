@@ -16,14 +16,13 @@ A proof-of-concept application for integrating with Fingerprint Pro for visitor 
    BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
    
    # Authentication
-   NEXTAUTH_SECRET=your_nextauth_secret_key
-   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_secret_key
    ADMIN_PASSWORD=your_admin_password
    ```
 
 ## Authentication
 
-This application is protected with NextAuth.js authentication.
+This application is protected with a custom authentication system. All routes except the login page, API routes, and webhook endpoints require authentication.
 
 ### Login Credentials
 
@@ -32,7 +31,11 @@ This application is protected with NextAuth.js authentication.
 
 ### Authentication Setup
 
-The authentication system uses NextAuth.js with a credentials provider. Only a single admin user is configured.
+The authentication system uses a simple cookie-based approach with the following components:
+
+- **Login API**: `/api/auth/login` - Validates credentials and sets an auth cookie
+- **Logout API**: `/api/auth/logout` - Clears the auth cookie
+- **Session API**: `/api/auth/session` - Returns the current user's session
 
 To modify the authentication settings:
 
@@ -49,7 +52,15 @@ To modify the authentication settings:
 
 3. When deploying to production, set these environment variables in your hosting platform.
 
+### Protected Routes
 
+All routes are protected except:
+- `/login` - The login page
+- `/api/auth/login` - Login API
+- `/api/auth/logout` - Logout API
+- `/api/auth/session` - Session API
+- `/webhooks/*` and `/api/webhooks/*` - Webhook endpoints
+- `/api/fingerprint-webhook` - Fingerprint webhook endpoint
 
 ## Development
 
@@ -206,14 +217,13 @@ In production, the application will use Vercel Blob for database storage.
 
 When deploying to production, make sure to set the following environment variables in your Vercel project settings:
 
-1. `NEXTAUTH_SECRET` - A secure random string for encrypting sessions
-2. `NEXTAUTH_URL` - The URL of your deployed application (e.g., `https://your-app.vercel.app`)
-3. `ADMIN_PASSWORD` - The password for the admin user
+1. `NEXTAUTH_SECRET` - A secure random string for encrypting cookies
+2. `ADMIN_PASSWORD` - The password for the admin user
 
 For security best practices:
 - Generate a new secure random string for `NEXTAUTH_SECRET` for each environment
 - Use a strong, unique password for `ADMIN_PASSWORD`
-- Consider implementing additional authentication providers for production use
+- Consider implementing additional security measures like rate limiting for login attempts
 
 ## Troubleshooting
 
@@ -221,9 +231,12 @@ For security best practices:
 
 If you encounter issues with authentication:
 
-1. **Check Environment Variables**: Ensure `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, and `ADMIN_PASSWORD` are correctly set in your `.env.local` file or Vercel project settings.
+1. **Check Environment Variables**: Ensure `NEXTAUTH_SECRET` and `ADMIN_PASSWORD` are correctly set in your `.env.local` file or Vercel project settings.
 
-2. **Session Not Persisting**: If your session isn't persisting between page refreshes, check that your `NEXTAUTH_SECRET` is properly set and consistent.
+2. **Cookie Issues**: If your authentication isn't persisting between page refreshes:
+   - Check that cookies are being set correctly (you can inspect this in your browser's developer tools)
+   - Ensure your `NEXTAUTH_SECRET` is properly set
+   - Check that your browser isn't blocking cookies
 
 3. **Login Errors**: If you're getting errors during login:
    - Verify that the username is exactly "admin"
@@ -233,12 +246,12 @@ If you encounter issues with authentication:
 4. **Middleware Errors**: If you're being redirected in a loop or getting middleware errors:
    - Ensure the middleware configuration is correct
    - Check that the public paths are properly defined
-   - Verify that the `NEXTAUTH_SECRET` is accessible in the middleware
+   - Verify that cookies are being properly read in the middleware
 
-5. **API Route Errors**: If you're getting 500 errors from the NextAuth API routes:
-   - Check that you're using the correct version of NextAuth
-   - Ensure all required environment variables are set
+5. **API Route Errors**: If you're getting errors from the authentication API routes:
+   - Check that all required environment variables are set
    - Look for error messages in the server logs
+   - Ensure the API routes are properly implemented
 
 ### Blob Storage Issues
 
