@@ -1,35 +1,37 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+
+// Define paths that don't require authentication
+const publicPaths = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/logout",
+  "/api/auth/session",
+  "/webhooks",
+  "/api/webhooks",
+  "/api/fingerprint-webhook"
+];
+
+// Helper function to check if a path is public
+function isPublicPath(pathname) {
+  return publicPaths.some(path => pathname.startsWith(path));
+}
 
 export async function middleware(request) {
   try {
-    // Get the token using the secret from environment variables
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Check if the path is public
+    const { pathname } = request.nextUrl;
     
-    const isAuthenticated = !!token;
-    
-    // Define public paths that don't require authentication
-    const publicPaths = ["/login"];
-    const isPublicPath = publicPaths.some(path => 
-      request.nextUrl.pathname.startsWith(path)
-    );
-    
-    // Check if the path is for the Next Auth API or webhooks
-    const isAuthPath = request.nextUrl.pathname.startsWith("/api/auth");
-    const isWebhookPath = request.nextUrl.pathname.startsWith("/webhooks") || 
-                          request.nextUrl.pathname.startsWith("/api/webhooks") ||
-                          request.nextUrl.pathname.startsWith("/api/fingerprint-webhook");
-    
-    // Allow access to public paths, auth API, and webhooks without authentication
-    if (isPublicPath || isAuthPath || isWebhookPath) {
+    // Allow access to public paths without authentication
+    if (isPublicPath(pathname)) {
       return NextResponse.next();
     }
     
+    // Check for auth token in cookies
+    const authToken = request.cookies.get('auth-token')?.value;
+    
     // Redirect to login if not authenticated
-    if (!isAuthenticated) {
+    if (!authToken) {
+      // Store the original URL to redirect back after login
       const loginUrl = new URL("/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
@@ -38,8 +40,9 @@ export async function middleware(request) {
     return NextResponse.next();
   } catch (error) {
     console.error("Middleware error:", error);
-    // In case of error, allow the request to proceed to avoid blocking the application
-    return NextResponse.next();
+    // In case of error, redirect to login
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 }
 

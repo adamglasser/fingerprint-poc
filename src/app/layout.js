@@ -1,6 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./providers";
 import Header from "./components/Header";
 
 const geistSans = Geist({
@@ -32,12 +31,12 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/FP-Favicon-Orange-WhiteBG-32x32.svg" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Providers>
-          <Header />
+        <Header />
+        <main className="flex-grow">
           {children}
-        </Providers>
+        </main>
       </body>
     </html>
   );
