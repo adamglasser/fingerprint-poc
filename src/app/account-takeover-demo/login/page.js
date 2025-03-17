@@ -46,6 +46,8 @@ export default function Login() {
     setMessage({ type: '', text: '' });
     
     try {
+      console.log('Sending login request with fingerprint:', visitorData.visitorId);
+      
       const response = await fetch('/api/account-takeover-demo/login', {
         method: 'POST',
         headers: {
@@ -59,23 +61,40 @@ export default function Login() {
       });
       
       const data = await response.json();
+      console.log('Login API response:', data);
       
       if (response.ok) {
-        if (data.fingerprintMatch === false) {
-          // Show MFA prompt if fingerprints don't match
-          setShowMfaPrompt(true);
+        // Check if login was successful
+        if (data.success) {
+          // Check for fingerprint match status
+          if (data.fingerprintMatch === false) {
+            console.log('New device detected, showing MFA prompt');
+            // Show MFA prompt for fingerprint mismatch
+            setShowMfaPrompt(true);
+            setMessage({ 
+              type: 'warning', 
+              text: 'New device detected. Please verify your identity.'
+            });
+          } else {
+            // Normal login success with matching fingerprint
+            console.log('Login successful with matching fingerprint');
+            // Store user info in session
+            sessionStorage.setItem('loggedInUser', username);
+            sessionStorage.setItem('fingerprintVerified', 'true');
+            
+            setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+            // Redirect after a short delay
+            setTimeout(() => {
+              router.push('/account-takeover-demo/dashboard');
+            }, 1500);
+          }
         } else {
-          // Normal login success
-          // Store username in sessionStorage
-          sessionStorage.setItem('loggedInUser', username);
-          
-          setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
-          // Wait 2 seconds before redirecting
-          setTimeout(() => {
-            router.push('/account-takeover-demo/dashboard');
-          }, 2000);
+          // Server returned success: false
+          setMessage({ type: 'error', text: data.error || 'Login failed. Please try again.' });
         }
       } else {
+        // HTTP error response
+        console.log('Login HTTP error:', response.status, data);
         setMessage({ type: 'error', text: data.error || 'Login failed. Please check your credentials.' });
       }
     } catch (error) {
@@ -87,10 +106,12 @@ export default function Login() {
   };
 
   const handleMfaVerify = async () => {
-    // In a real implementation, this would verify the MFA code
-    // For this demo, we'll just simulate success and save the new fingerprint
+    setIsLoading(true);
+    setMessage({ type: 'info', text: 'Verifying device...' });
     
     try {
+      console.log('Adding new fingerprint for:', username);
+      
       const response = await fetch('/api/account-takeover-demo/add-fingerprint', {
         method: 'POST',
         headers: {
@@ -103,33 +124,43 @@ export default function Login() {
       });
       
       const data = await response.json();
+      console.log('Add fingerprint response:', data);
       
-      if (response.ok) {
-        // Fingerprint has been added successfully
-        // Store username in sessionStorage
+      if (response.ok && data.success) {
+        // Fingerprint added successfully
+        console.log('New fingerprint saved successfully');
+        
+        // Update session
         sessionStorage.setItem('loggedInUser', username);
+        sessionStorage.setItem('fingerprintVerified', 'true');
         
-        setMessage({ type: 'success', text: 'Verification successful! New device fingerprint saved.' });
+        // Hide MFA prompt
+        setShowMfaPrompt(false);
         
-        // Wait 1 second before redirecting
+        // Show success message and redirect
+        setMessage({ 
+          type: 'success', 
+          text: 'Device verified successfully! Redirecting to dashboard...' 
+        });
+        
         setTimeout(() => {
           router.push('/account-takeover-demo/dashboard');
-        }, 1000);
+        }, 1500);
       } else {
         console.error('Failed to save fingerprint:', data.error);
-        // Still proceed with login even if saving fingerprint fails
-        setMessage({ type: 'success', text: 'Verification successful! Redirecting...' });
-        setTimeout(() => {
-          router.push('/account-takeover-demo/dashboard');
-        }, 1000);
+        setMessage({ 
+          type: 'error', 
+          text: data.error || 'Failed to verify device. Please try again.' 
+        });
       }
     } catch (error) {
-      console.error('Error adding fingerprint:', error);
-      // Still proceed with login even if there's an error
-      setMessage({ type: 'success', text: 'Verification successful! Redirecting...' });
-      setTimeout(() => {
-        router.push('/account-takeover-demo/dashboard');
-      }, 1000);
+      console.error('Error verifying device:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'An error occurred while verifying your device. Please try again.' 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 

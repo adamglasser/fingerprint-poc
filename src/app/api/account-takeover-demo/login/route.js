@@ -5,6 +5,9 @@ export async function POST(request) {
   try {
     const { username, password, fingerprint } = await request.json();
     
+    console.log(`Login attempt for ${username}`);
+    console.log('Current userStore:', Array.from(userStore.entries()));
+    
     // Basic validation
     if (!username || !password || !fingerprint) {
       return NextResponse.json(
@@ -15,6 +18,7 @@ export async function POST(request) {
     
     // Check if user exists
     if (!userStore.has(username)) {
+      console.log(`User not found: ${username}`);
       return NextResponse.json(
         { error: 'Invalid username or password' },
         { status: 401 }
@@ -23,35 +27,38 @@ export async function POST(request) {
     
     // Get the user record
     const user = userStore.get(username);
+    console.log(`User found: ${username}`, user);
     
     // Verify password
     if (user.password !== password) {
+      console.log(`Password mismatch for user: ${username}`);
       return NextResponse.json(
         { error: 'Invalid username or password' },
         { status: 401 }
       );
     }
     
-    // Check if the fingerprint matches
-    let fingerprintMatch = false;
+    // Always ensure fingerprint is treated as an array
+    const fingerprintArray = Array.isArray(user.fingerprint) 
+      ? user.fingerprint 
+      : [user.fingerprint];
     
-    if (Array.isArray(user.fingerprint)) {
-      // If fingerprint is stored as an array, check if the current fingerprint is in the array
-      fingerprintMatch = user.fingerprint.includes(fingerprint);
-    } else {
-      // Legacy case: fingerprint is stored as a single value
-      fingerprintMatch = user.fingerprint === fingerprint;
-    }
+    // Check if the fingerprint matches any in the array
+    const fingerprintMatch = fingerprintArray.includes(fingerprint);
     
-    console.log(`Login attempt for ${username}: Password verified, fingerprint match: ${fingerprintMatch}`);
-    console.log(`Stored fingerprint(s):`, user.fingerprint);
-    console.log(`Current fingerprint: ${fingerprint}`);
+    console.log(`Fingerprint check for ${username}:`);
+    console.log(`- Stored fingerprints: ${JSON.stringify(fingerprintArray)}`);
+    console.log(`- Current fingerprint: ${fingerprint}`);
+    console.log(`- Match result: ${fingerprintMatch}`);
     
-    // Return login success, but include fingerprint match status
+    // Return appropriate response
     return NextResponse.json({
       success: true,
-      message: 'Login successful',
       fingerprintMatch,
+      message: fingerprintMatch 
+        ? 'Login successful' 
+        : 'New device detected',
+      status: fingerprintMatch ? 'normal' : 'verification_required'
     });
   } catch (error) {
     console.error('Login error:', error);
