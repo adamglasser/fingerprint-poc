@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft,
   CheckCircle,
@@ -14,9 +15,10 @@ import {
 import { useVisitorData } from '@fingerprintjs/fingerprintjs-pro-react';
 
 export default function Dashboard() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [userFingerprints, setUserFingerprints] = useState([]);
-  const [isLoadingFingerprints, setIsLoadingFingerprints] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [fingerprintError, setFingerprintError] = useState(null);
   
   // Get the visitor's fingerprint for display
@@ -26,59 +28,71 @@ export default function Dashboard() {
     data: visitorData,
   } = useVisitorData({ immediate: true });
 
-  // Get the current logged in username from sessionStorage
+  // Check if user is logged in and fetch fingerprints if they are
   useEffect(() => {
     const storedUsername = sessionStorage.getItem('loggedInUser');
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-  }, []);
-
-  // Fetch all fingerprints associated with the user
-  useEffect(() => {
-    if (username) {
-      fetchUserFingerprints();
-    }
-  }, [username]);
-
-  const fetchUserFingerprints = async () => {
-    if (!username) return;
     
-    setIsLoadingFingerprints(true);
-    setFingerprintError(null);
+    if (!storedUsername) {
+      // Not logged in, redirect to login page
+      router.push('/account-takeover-demo/login');
+      return;
+    }
     
-    try {
-      const response = await fetch('/api/account-takeover-demo/get-user-fingerprints', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          username: username
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUserFingerprints(data.fingerprints || []);
-      } else {
-        setFingerprintError(data.error || 'Failed to fetch fingerprints');
-        console.error('Error fetching user fingerprints:', data.error);
+    setUsername(storedUsername);
+    
+    // Fetch fingerprints for the user
+    const fetchFingerprints = async () => {
+      try {
+        const response = await fetch('/api/account-takeover-demo/get-user-fingerprints', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            username: storedUsername
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          setUserFingerprints(data.fingerprints || []);
+        } else {
+          console.error('Error fetching fingerprints:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching fingerprints:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setFingerprintError('An error occurred while retrieving fingerprints');
-      console.error('Error fetching user fingerprints:', error);
-    } finally {
-      setIsLoadingFingerprints(false);
-    }
-  };
+    };
+    
+    fetchFingerprints();
+  }, [router]);
 
   // Check if current fingerprint is trusted
   const isCurrentFingerprintTrusted = () => {
     if (!visitorData?.visitorId || userFingerprints.length === 0) return false;
     return userFingerprints.includes(visitorData.visitorId);
   };
+
+  // Handle logout
+  const handleLogout = () => {
+    sessionStorage.removeItem('loggedInUser');
+    router.push('/account-takeover-demo/login');
+  };
+
+  // Show loading state
+  if (isLoading || isFingerprintLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+          <Loader2 className="w-10 h-10 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -161,7 +175,7 @@ export default function Dashboard() {
                   <Fingerprint className="w-4 h-4 mr-1 text-blue-600 dark:text-blue-400" />
                   Trusted Device Fingerprints
                 </h3>
-                {isLoadingFingerprints ? (
+                {isLoading ? (
                   <div className="flex items-center p-3">
                     <Loader2 className="w-4 h-4 mr-2 animate-spin text-blue-600 dark:text-blue-400" />
                     <span className="text-gray-600 dark:text-gray-400">Loading trusted fingerprints...</span>
@@ -227,7 +241,7 @@ export default function Dashboard() {
             <Link 
               href="/account-takeover-demo/login"
               className="inline-flex items-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              onClick={() => sessionStorage.removeItem('loggedInUser')}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Log Out
