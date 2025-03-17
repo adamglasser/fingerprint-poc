@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
+import { FpjsProvider } from '@fingerprintjs/fingerprintjs-pro-react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,10 +34,20 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Header />
-        <main className="flex-grow">
-          {children}
-        </main>
+        <FpjsProvider
+          loadOptions={{
+            apiKey: process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY,
+            endpoint: "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/uVlgRwunV0GJub6T",
+            scriptUrlPattern: [
+              "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/wFTswDFEmr2aX2ki?apiKey=<apiKey>&version=<version>&loaderVersion=<loaderVersion>",
+            ]
+          }}
+        >
+          <Header />
+          <main className="flex-grow">
+            {children}
+          </main>
+        </FpjsProvider>
       </body>
     </html>
   );
