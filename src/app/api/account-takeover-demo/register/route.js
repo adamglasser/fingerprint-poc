@@ -49,5 +49,5 @@ export async function POST(request) {
   }
 }
 
-// Expose the user store for use by other routes
-export { userStore }; 
+// The userStore is already exported at the top of the file
+// No need for another export here 
