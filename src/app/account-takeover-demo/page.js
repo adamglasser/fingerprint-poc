@@ -20,7 +20,7 @@ export default function AccountTakeoverDemo() {
           <div className="inline-block mb-6">
             <div className="flex items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-full shadow-md">
               <Image 
-                src='/FP_Orange.png'
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/FP_Orange.png`}
                 alt="Fingerprint"
                 width={50}
                 height={50}

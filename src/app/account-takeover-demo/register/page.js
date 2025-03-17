@@ -61,6 +61,9 @@ export default function Register() {
       if (response.ok) {
         setMessage({ type: 'success', text: 'Registration successful! Redirecting to dashboard...' });
         
+        // Store username in sessionStorage
+        sessionStorage.setItem('loggedInUser', username);
+        
         // Automatically log in the user after successful registration
         try {
           const loginResponse = await fetch('/api/account-takeover-demo/login', {

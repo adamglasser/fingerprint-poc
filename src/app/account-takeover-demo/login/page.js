@@ -66,6 +66,9 @@ export default function Login() {
           setShowMfaPrompt(true);
         } else {
           // Normal login success
+          // Store username in sessionStorage
+          sessionStorage.setItem('loggedInUser', username);
+          
           setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
           // Wait 2 seconds before redirecting
           setTimeout(() => {
@@ -83,16 +86,51 @@ export default function Login() {
     }
   };
 
-  const handleMfaVerify = () => {
+  const handleMfaVerify = async () => {
     // In a real implementation, this would verify the MFA code
-    // For this demo, we'll just simulate success
+    // For this demo, we'll just simulate success and save the new fingerprint
     
-    setMessage({ type: 'success', text: 'Verification successful! Redirecting...' });
-    
-    // Wait 2 seconds before redirecting
-    setTimeout(() => {
-      router.push('/account-takeover-demo/dashboard');
-    }, 2000);
+    try {
+      const response = await fetch('/api/account-takeover-demo/add-fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: username,
+          newFingerprint: visitorData.visitorId
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Fingerprint has been added successfully
+        // Store username in sessionStorage
+        sessionStorage.setItem('loggedInUser', username);
+        
+        setMessage({ type: 'success', text: 'Verification successful! New device fingerprint saved.' });
+        
+        // Wait 1 second before redirecting
+        setTimeout(() => {
+          router.push('/account-takeover-demo/dashboard');
+        }, 1000);
+      } else {
+        console.error('Failed to save fingerprint:', data.error);
+        // Still proceed with login even if saving fingerprint fails
+        setMessage({ type: 'success', text: 'Verification successful! Redirecting...' });
+        setTimeout(() => {
+          router.push('/account-takeover-demo/dashboard');
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error adding fingerprint:', error);
+      // Still proceed with login even if there's an error
+      setMessage({ type: 'success', text: 'Verification successful! Redirecting...' });
+      setTimeout(() => {
+        router.push('/account-takeover-demo/dashboard');
+      }, 1000);
+    }
   };
 
   // MFA Prompt Component
@@ -123,6 +161,13 @@ export default function Login() {
           <div className="font-mono text-sm overflow-x-auto bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
             {visitorData?.visitorId || 'Fingerprint not available'}
           </div>
+        </div>
+        
+        <div className="p-4 mb-6 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md">
+          <p className="flex items-start">
+            <Fingerprint className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+            By verifying your identity, this device's fingerprint will be saved as trusted for your account.
+          </p>
         </div>
         
         <div className="flex gap-3">
