@@ -6,7 +6,10 @@ export async function POST(request) {
     const { username, password, fingerprint } = await request.json();
     
     console.log(`Login attempt for ${username}`);
-    console.log('Current userStore:', Array.from(userStore.entries()));
+    
+    // Get all users for logging (development only)
+    const userEntries = await userStore.entries();
+    console.log('Current userStore:', userEntries);
     
     // Basic validation
     if (!username || !password || !fingerprint) {
@@ -17,7 +20,7 @@ export async function POST(request) {
     }
     
     // Check if user exists
-    if (!userStore.has(username)) {
+    if (!(await userStore.has(username))) {
       console.log(`User not found: ${username}`);
       return NextResponse.json(
         { error: 'Invalid username or password' },
@@ -26,7 +29,7 @@ export async function POST(request) {
     }
     
     // Get the user record
-    const user = userStore.get(username);
+    const user = await userStore.get(username);
     console.log(`User found: ${username}`, user);
     
     // Verify password

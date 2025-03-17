@@ -14,7 +14,7 @@ export async function POST(request) {
     }
     
     // Check if user exists
-    if (!userStore.has(username)) {
+    if (!(await userStore.has(username))) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -22,7 +22,7 @@ export async function POST(request) {
     }
     
     // Get the user record
-    const user = userStore.get(username);
+    const user = await userStore.get(username);
     
     // Prepare fingerprint data to return
     let fingerprints = [];
