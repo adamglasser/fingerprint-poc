@@ -8,14 +8,10 @@ const nextConfig = {
   
     // Configure image handling
     images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'www.fpmetricslogger.us',
-        },
+      domains: [
+        'www.fpmetricslogger.us',
+        'rrpdr8h3k6yjiur0.public.blob.vercel-storage.com'
       ],
-      // Do not unoptimize in development as it can cause issues
-      unoptimized: false,
     },
   };
   

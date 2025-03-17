@@ -27,7 +27,7 @@ export default function Dashboard() {
           <div className="inline-block mb-6">
             <div className="flex items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-full shadow-md">
               <Image 
-                src="/FP_Orange.png"
+                src="https://rrpdr8h3k6yjiur0.public.blob.vercel-storage.com/images/FP_Orange-hsEpV8Zz53PvsDFE9fx8lyPqFyJGcQ.png"
                 alt="Fingerprint"
                 width={60}
                 height={60}
