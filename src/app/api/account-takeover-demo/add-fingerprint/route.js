@@ -6,7 +6,8 @@ export async function POST(request) {
     const { username, newFingerprint } = await request.json();
     
     console.log(`Add fingerprint request for ${username}`);
-    console.log('Current userStore:', Array.from(userStore.entries()));
+    const userEntries = await userStore.entries();
+    console.log('Current userStore:', userEntries);
     
     // Basic validation
     if (!username || !newFingerprint) {
@@ -17,7 +18,7 @@ export async function POST(request) {
     }
     
     // Check if user exists
-    if (!userStore.has(username)) {
+    if (!(await userStore.has(username))) {
       console.log(`User not found for add-fingerprint: ${username}`);
       return NextResponse.json(
         { error: 'User not found' },
@@ -26,7 +27,7 @@ export async function POST(request) {
     }
     
     // Get the user record
-    const user = userStore.get(username);
+    const user = await userStore.get(username);
     console.log(`User found for add-fingerprint: ${username}`, user);
     
     // Ensure fingerprint is always stored as an array
@@ -43,7 +44,7 @@ export async function POST(request) {
     }
     
     // Update the user in the store
-    userStore.set(username, user);
+    await userStore.set(username, user);
     
     console.log(`Updated user record:`, user);
     
