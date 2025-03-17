@@ -1,47 +1,58 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "./LogoutButton";
 
 export default function Header() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+
+  // Function to fetch session data
+  const fetchSession = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/session", {
+        // Add cache: 'no-store' to prevent caching
+        cache: 'no-store',
+        headers: {
+          // Add a timestamp to bust cache
+          'x-timestamp': Date.now().toString()
+        }
+      });
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch session data whenever pathname changes
+    // This ensures the header updates after navigation
+    fetchSession();
+    
+    // Also set up a periodic refresh (less frequent)
+    const intervalId = setInterval(fetchSession, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [pathname]); // Re-run when pathname changes
 
   // Don't render header on login page
   if (pathname === "/login") {
     return null;
   }
-
-  useEffect(() => {
-    // Function to fetch session data
-    async function fetchSession() {
-      try {
-        const response = await fetch("/api/auth/session");
-        const data = await response.json();
-        
-        if (data.user) {
-          setUser(data.user);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error("Error fetching session:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchSession();
-
-    // Set up an interval to periodically check the session
-    const intervalId = setInterval(fetchSession, 60000); // Check every minute
-
-    return () => clearInterval(intervalId);
-  }, []);
 
   return (
     <header className="sticky top-0 z-10 border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
@@ -60,12 +71,12 @@ export default function Header() {
         </div>
         
         {/* If user is authenticated, show user info and logout button */}
-        {user && !loading && (
+        {user && (
           <div className="flex items-center gap-4">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               Logged in as <span className="font-medium">{user.name}</span>
             </div>
-            <LogoutButton />
+            <LogoutButton onLogout={() => setUser(null)} />
           </div>
         )}
       </div>

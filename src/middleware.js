@@ -9,74 +9,67 @@ const publicPaths = [
   "/api/auth/session",
   "/webhooks",
   "/api/webhooks",
-  "/api/fingerprint-webhook",
-  "/account-takeover-demo",
-  "/api/account-takeover-demo"
+  "/api/fingerprint-webhook"
 ];
 
-// Protected paths that require authentication
-const protectedPaths = [
-  "/dashboard"
-];
-
-// Helper function to check if a path is public
+// Function to check if a path should be accessible without authentication
 function isPublicPath(pathname) {
-  // Special case for root path
-  if (pathname === "/") {
+  // Check exact matches first
+  if (publicPaths.includes(pathname)) {
     return true;
   }
   
-  return publicPaths.some(path => {
-    if (path === pathname) {
-      return true;
-    }
-    // Special handling for account-takeover-demo to match all subpaths
-    if (path === "/account-takeover-demo" && pathname.startsWith("/account-takeover-demo/")) {
-      return true;
-    }
-    return pathname.startsWith(path);
-  });
+  // Check path prefixes for API routes and static resources
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon.") ||
+    pathname.endsWith(".svg")
+  ) {
+    return true;
+  }
+  
+  return false;
 }
 
-// Helper function to check if a path is protected
-function isProtectedPath(pathname) {
-  return protectedPaths.some(path => pathname === path || pathname.startsWith(path + '/'));
+// Function to check if path is part of the account takeover demo
+function isAccountTakeoverPath(pathname) {
+  return pathname.startsWith("/account-takeover-demo") || 
+         pathname.startsWith("/api/account-takeover-demo");
 }
 
 export async function middleware(request) {
   try {
-    // Check the path
     const { pathname } = request.nextUrl;
+    
+    // Skip middleware for account takeover demo paths
+    // These have their own simulated authentication system
+    if (isAccountTakeoverPath(pathname)) {
+      return NextResponse.next();
+    }
     
     // Allow access to public paths without authentication
     if (isPublicPath(pathname)) {
       return NextResponse.next();
     }
     
-    // Check if the path requires authentication
-    if (isProtectedPath(pathname)) {
-      // Check for auth token in cookies
-      const authToken = request.cookies.get('auth-token')?.value;
-      
-      // Redirect to login if not authenticated
-      if (!authToken) {
-        // Store the original URL to redirect back after login
-        const loginUrl = new URL("/login", request.url);
-        return NextResponse.redirect(loginUrl);
-      }
+    // For all other paths, require authentication
+    const authToken = request.cookies.get('auth-token')?.value;
+    
+    // Redirect to login if not authenticated
+    if (!authToken) {
+      // Store the original URL to redirect back after login
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
     }
     
-    // Allow access for authenticated users or paths we don't explicitly control
+    // User is authenticated, allow access
     return NextResponse.next();
   } catch (error) {
     console.error("Middleware error:", error);
-    // In case of error, redirect to login for protected paths
-    const { pathname } = request.nextUrl;
-    if (isProtectedPath(pathname)) {
-      const loginUrl = new URL("/login", request.url);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
+    // In case of error, redirect to login
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
 }
 

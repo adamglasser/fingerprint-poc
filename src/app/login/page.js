@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Get callbackUrl from URL parameters with dashboard as fallback
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   // Check if user is already logged in
   useEffect(() => {
@@ -19,8 +24,8 @@ export default function LoginPage() {
         const data = await response.json();
         
         if (data.user) {
-          // If already logged in, redirect to home
-          router.push("/");
+          // If already logged in, redirect to callback URL or dashboard
+          router.push(callbackUrl);
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -30,7 +35,7 @@ export default function LoginPage() {
     }
     
     checkSession();
-  }, [router]);
+  }, [router, callbackUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,8 +58,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Successful login
-      router.push("/");
+      // Successful login - redirect to callback URL or dashboard
+      router.push(callbackUrl);
       router.refresh();
     } catch (error) {
       console.error("Login error:", error);
@@ -145,6 +150,12 @@ export default function LoginPage() {
           <div className="text-sm text-center text-gray-500">
             <p>Username: admin, password is in 1pw, slack Adam for access</p>
           </div>
+          <Link
+            href="/"
+            className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-center transition-colors bg-gray-200 text-gray-900 hover:bg-gray-300`}
+          >
+            Return to Home
+          </Link>
         </form>
       </div>
     </div>

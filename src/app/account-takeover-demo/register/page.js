@@ -59,13 +59,35 @@ export default function Register() {
       const data = await response.json();
       
       if (response.ok) {
-        setMessage({ type: 'success', text: 'Registration successful! Redirecting to login...' });
-        // Try both router.push and window.location for redirection
+        setMessage({ type: 'success', text: 'Registration successful! Redirecting to dashboard...' });
+        
+        // Automatically log in the user after successful registration
         try {
-          router.push('/account-takeover-demo/login');
+          const loginResponse = await fetch('/api/account-takeover-demo/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              username: username,
+              password: password,
+              fingerprint: visitorData.visitorId
+            })
+          });
+          
+          const loginData = await loginResponse.json();
+          
+          if (loginResponse.ok) {
+            // Redirect to dashboard after successful login
+            router.push('/account-takeover-demo/dashboard');
+          } else {
+            // If automatic login fails, redirect to login page
+            console.error('Automatic login failed:', loginData.error);
+            router.push('/account-takeover-demo/login');
+          }
         } catch (error) {
-          console.error('Router redirection failed:', error);
-          // Fallback to window.location if router fails
+          console.error('Automatic login error:', error);
+          // Fallback to login page if automatic login fails
           window.location.href = '/account-takeover-demo/login';
         }
       } else {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
 
-export default function LogoutButton() {
+export default function LogoutButton({ onLogout }) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -21,6 +21,10 @@ export default function LogoutButton() {
       });
       
       if (response.ok) {
+        // Call the onLogout callback if provided
+        if (onLogout) onLogout();
+        
+        // Redirect to login page
         router.push("/login");
         router.refresh();
       } else {
