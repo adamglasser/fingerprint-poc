@@ -5,6 +5,9 @@ export async function POST(request) {
   try {
     const { username, newFingerprint } = await request.json();
     
+    console.log(`Add fingerprint request for ${username}`);
+    console.log('Current userStore:', Array.from(userStore.entries()));
+    
     // Basic validation
     if (!username || !newFingerprint) {
       return NextResponse.json(
@@ -15,6 +18,7 @@ export async function POST(request) {
     
     // Check if user exists
     if (!userStore.has(username)) {
+      console.log(`User not found for add-fingerprint: ${username}`);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -23,31 +27,31 @@ export async function POST(request) {
     
     // Get the user record
     const user = userStore.get(username);
+    console.log(`User found for add-fingerprint: ${username}`, user);
     
-    // If user already has a fingerprint array, add the new one
-    // Otherwise, convert the single fingerprint to an array and add the new one
-    if (Array.isArray(user.fingerprint)) {
-      // Check if fingerprint already exists to avoid duplicates
-      if (!user.fingerprint.includes(newFingerprint)) {
-        user.fingerprint.push(newFingerprint);
-      }
+    // Ensure fingerprint is always stored as an array
+    if (!Array.isArray(user.fingerprint)) {
+      user.fingerprint = [user.fingerprint];
+    }
+    
+    // Add the new fingerprint if it doesn't already exist
+    if (!user.fingerprint.includes(newFingerprint)) {
+      user.fingerprint.push(newFingerprint);
+      console.log(`New fingerprint added for ${username}:`, newFingerprint);
     } else {
-      // Convert to array only if the new fingerprint is different
-      const originalFingerprint = user.fingerprint;
-      if (originalFingerprint !== newFingerprint) {
-        user.fingerprint = [originalFingerprint, newFingerprint];
-      }
+      console.log(`Fingerprint already exists for ${username}:`, newFingerprint);
     }
     
     // Update the user in the store
     userStore.set(username, user);
     
-    console.log(`Fingerprint added for ${username}. Current fingerprints:`, user.fingerprint);
+    console.log(`Updated user record:`, user);
     
     // Return success response
     return NextResponse.json({
       success: true,
-      message: 'Fingerprint added successfully'
+      message: 'Fingerprint added successfully',
+      fingerprintsCount: user.fingerprint.length
     });
   } catch (error) {
     console.error('Add fingerprint error:', error);

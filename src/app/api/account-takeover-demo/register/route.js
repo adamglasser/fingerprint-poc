@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 // We'll use a simple in-memory store for this demo
 // In a real application, you would use a database
-const userStore = new Map();
+export const userStore = new Map();
 
 export async function POST(request) {
   try {
@@ -24,14 +24,16 @@ export async function POST(request) {
       );
     }
     
-    // Store the user with their fingerprint
+    // Store the user with their fingerprint as an array for consistency
+    // This makes it easier to add new fingerprints later
     userStore.set(username, {
       password,
-      fingerprint,
+      fingerprint: [fingerprint],
       registeredAt: new Date().toISOString()
     });
     
     console.log(`User registered: ${username} with fingerprint: ${fingerprint}`);
+    console.log('Current userStore:', Array.from(userStore.entries()));
     
     // Return success response
     return NextResponse.json({
