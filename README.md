@@ -100,6 +100,73 @@ To access the webhooks page, click the "View All Events" button on the main page
 
 This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment. It uses a simple in memory key value store for the account takeover demo portion.
 
+## Vercel Blob Management
+
+This application includes several scripts to help manage Vercel Blob storage:
+
+### List Blobs
+
+To list all blobs in your Vercel Blob storage:
+
+```bash
+node scripts/list-blobs.js
+```
+
+To list blobs with a specific prefix:
+
+```bash
+node scripts/list-blobs.js fingerprint-database
+```
+
+### Cleanup Database Blobs
+
+Over time, your Vercel Blob storage may accumulate many database backup files. You can clean these up while keeping only the most recent ones:
+
+```bash
+node scripts/cleanup-blobs.js
+```
+
+By default, this script:
+1. Lists all blobs with the prefix 'fingerprint-database'
+2. Keeps the 5 most recent database blobs
+3. Deletes all older database blobs
+
+You can modify the `keepCount` variable in the script to change how many recent blobs to keep.
+
+### Comprehensive Blob Cleanup
+
+To clean up all non-essential blobs while preserving important files:
+
+```bash
+node scripts/cleanup-all-blobs.js
+```
+
+This script:
+1. Keeps all blobs in the `images/` subfolder
+2. Keeps the 5 most recent database blobs
+3. Deletes all other blobs
+
+This is useful for reducing your storage usage while ensuring you don't delete important application assets.
+
+### Delete Single Blob
+
+For testing or targeted deletion, you can use:
+
+```bash
+node scripts/delete-single-blob.js
+```
+
+This script will find and delete the oldest blob with the 'fingerprint-database' prefix.
+
+### Troubleshooting Blob Storage
+
+If you encounter issues with Vercel Blob storage:
+
+1. Verify your BLOB_READ_WRITE_TOKEN is set correctly in .env.local
+2. Check that you're not hitting storage limits
+3. Use the list-blobs.js script to see what's currently stored
+4. Run the cleanup-blobs.js script to reduce storage usage
+
 ## Blob Storage Testing
 
 I have included some scripts to test and verify Vercel Blob storage functionality:
