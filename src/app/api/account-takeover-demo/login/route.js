@@ -33,10 +33,18 @@ export async function POST(request) {
     }
     
     // Check if the fingerprint matches
-    const fingerprintMatch = user.fingerprint === fingerprint;
+    let fingerprintMatch = false;
+    
+    if (Array.isArray(user.fingerprint)) {
+      // If fingerprint is stored as an array, check if the current fingerprint is in the array
+      fingerprintMatch = user.fingerprint.includes(fingerprint);
+    } else {
+      // Legacy case: fingerprint is stored as a single value
+      fingerprintMatch = user.fingerprint === fingerprint;
+    }
     
     console.log(`Login attempt for ${username}: Password verified, fingerprint match: ${fingerprintMatch}`);
-    console.log(`Stored fingerprint: ${user.fingerprint}`);
+    console.log(`Stored fingerprint(s):`, user.fingerprint);
     console.log(`Current fingerprint: ${fingerprint}`);
     
     // Return login success, but include fingerprint match status
