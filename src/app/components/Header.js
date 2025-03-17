@@ -1,85 +1,84 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import LogoutButton from "./LogoutButton";
 
 export default function Header() {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Skip fetching session on login page
-    if (pathname === "/login") {
-      setLoading(false);
-      return;
-    }
-
-    async function fetchSession() {
-      try {
-        const response = await fetch("/api/auth/session");
-        const data = await response.json();
-        
-        if (data.user) {
-          setUser(data.user);
-        } else if (pathname !== "/login") {
-          // If no user and not on login page, redirect to login
-          router.push("/login");
+  // Function to fetch session data
+  const fetchSession = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/auth/session", {
+        // Add cache: 'no-store' to prevent caching
+        cache: 'no-store',
+        headers: {
+          // Add a timestamp to bust cache
+          'x-timestamp': Date.now().toString()
         }
-      } catch (error) {
-        console.error("Error fetching session:", error);
-        // On error, redirect to login if not already there
-        if (pathname !== "/login") {
-          router.push("/login");
-        }
-      } finally {
-        setLoading(false);
+      });
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
       }
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
+    // Fetch session data whenever pathname changes
+    // This ensures the header updates after navigation
     fetchSession();
-
-    // Set up an interval to periodically check the session
-    const intervalId = setInterval(fetchSession, 60000); // Check every minute
-
+    
+    // Also set up a periodic refresh (less frequent)
+    const intervalId = setInterval(fetchSession, 30000);
+    
     return () => clearInterval(intervalId);
-  }, [pathname, router]);
+  }, [pathname]); // Re-run when pathname changes
 
-  // Don't render anything on the login page
+  // Don't render header on login page
   if (pathname === "/login") {
     return null;
   }
 
-  // Show nothing while loading
-  if (loading) {
-    return null;
-  }
-
-  // Show nothing if no user (will redirect to login)
-  if (!user) {
-    return null;
-  }
-
   return (
-    <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+    <header className="sticky top-0 z-10 border-b border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700">
       <div className="mx-auto flex max-w-7xl items-center justify-between p-4">
         <div className="flex items-center gap-2">
-          <img 
-            src="/FP-Favicon-Orange-WhiteBG-32x32.svg" 
-            alt="Fingerprint Logo" 
-            className="h-8 w-8" 
-          />
-          <h1 className="text-xl font-bold text-gray-600">FP Demo App</h1>
+          <Link href="/">
+            <img 
+              src="/FP-Favicon-Orange-WhiteBG-32x32.svg" 
+              alt="Fingerprint Logo" 
+              className="h-8 w-8" 
+            />
+          </Link>
+          <h1 className="text-xl font-bold text-gray-600 dark:text-gray-300">
+            <Link href="/">FP Demo App</Link>
+          </h1>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-600">
-            Logged in as <span className="font-medium">{user.name}</span>
+        {/* If user is authenticated, show user info and logout button */}
+        {user && (
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-600 dark:text-gray-300">
+              Logged in as <span className="font-medium">{user.name}</span>
+            </div>
+            <LogoutButton onLogout={() => setUser(null)} />
           </div>
-          <LogoutButton />
-        </div>
+        )}
       </div>
     </header>
   );

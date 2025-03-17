@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 // Define paths that don't require authentication
 const publicPaths = [
+  "/",
   "/login",
   "/api/auth/login",
   "/api/auth/logout",
@@ -11,32 +12,58 @@ const publicPaths = [
   "/api/fingerprint-webhook"
 ];
 
-// Helper function to check if a path is public
+// Function to check if a path should be accessible without authentication
 function isPublicPath(pathname) {
-  return publicPaths.some(path => pathname.startsWith(path));
+  // Check exact matches first
+  if (publicPaths.includes(pathname)) {
+    return true;
+  }
+  
+  // Check path prefixes for API routes and static resources
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/favicon.") ||
+    pathname.endsWith(".svg")
+  ) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Function to check if path is part of the account takeover demo
+function isAccountTakeoverPath(pathname) {
+  return pathname.startsWith("/account-takeover-demo") || 
+         pathname.startsWith("/api/account-takeover-demo");
 }
 
 export async function middleware(request) {
   try {
-    // Check if the path is public
     const { pathname } = request.nextUrl;
+    
+    // Skip middleware for account takeover demo paths
+    // These have their own simulated authentication system
+    if (isAccountTakeoverPath(pathname)) {
+      return NextResponse.next();
+    }
     
     // Allow access to public paths without authentication
     if (isPublicPath(pathname)) {
       return NextResponse.next();
     }
     
-    // Check for auth token in cookies
+    // For all other paths, require authentication
     const authToken = request.cookies.get('auth-token')?.value;
     
     // Redirect to login if not authenticated
     if (!authToken) {
       // Store the original URL to redirect back after login
       const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
     
-    // Allow access to protected routes if authenticated
+    // User is authenticated, allow access
     return NextResponse.next();
   } catch (error) {
     console.error("Middleware error:", error);

@@ -20,11 +20,8 @@ A proof-of-concept application for integrating with Fingerprint Pro for visitor 
    ADMIN_PASSWORD=your_admin_password
    ```
 
-## Authentication
-
-This application is protected with a custom authentication system. All routes except the login page, API routes, and webhook endpoints require authentication.
-
 ### Login Credentials
+## This is for the dashboard page only
 
 - **Username**: admin
 - **Password**: The password is set in the `.env.local` file as `ADMIN_PASSWORD`
@@ -52,15 +49,6 @@ To modify the authentication settings:
 
 3. When deploying to production, set these environment variables in your hosting platform.
 
-### Protected Routes
-
-All routes are protected except:
-- `/login` - The login page
-- `/api/auth/login` - Login API
-- `/api/auth/logout` - Logout API
-- `/api/auth/session` - Session API
-- `/webhooks/*` and `/api/webhooks/*` - Webhook endpoints
-- `/api/fingerprint-webhook` - Fingerprint webhook endpoint
 
 ## Development
 
@@ -74,28 +62,47 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Features
 
+### Visitor Dashboard
+
+The application includes a dedicated dashboard that provides a comprehensive view of visitor data. Access it by navigating to `/dashboard` or clicking the dashboard link from the home page.
+
+The dashboard displays:
+- Current visitor information
+- Webhook events for the current visitor
+- Event details and an event search function
+
 ### Visitor Identification
 
 The application uses Fingerprint Pro to identify visitors across sessions and devices. Each visitor is assigned a unique identifier that persists even when cookies are cleared or different browsers are used.
+
+### Account Takeover Protection Demo
+
+The application includes a  demo that showcases how Fingerprint can be used to detect and prevent account takeover attempts:
+
+- **Registration**: Users can register a new account, capturing their device fingerprint
+- **Login**: When users attempt to login, the system compares their current fingerprint to the one captured during registration
+- **Security**: If the fingerprints don't match (indicating a potentially unauthorized login attempt), additional verification is required
+
+Access this demo by navigating to `/account-takeover-demo` or clicking the Account Takeover Demo link from the home page.
 
 ### Webhook Events
 
 The application includes a webhook endpoint that receives events from Fingerprint Pro. These events are stored in the database and can be viewed in the UI:
 
 - **Main Page**: Shows webhook events for the current visitor
+- **Dashboard**: Displays webhook events with additional context
 - **Webhooks Page**: Shows all webhook events from all visitors
 
-To access the webhooks page, click the "View All Events" button on the main page or navigate to `/webhooks`.
+To access the webhooks page, click the "View All Events" button on the main page or dashboard, or navigate to `/webhooks`.
 
-> **⚠️ Security Warning**: This demo publicly displays all visitor data and webhook events. In a production environment, you should implement proper authentication and authorization to protect sensitive information.
 
 ## Database
 
-This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment.
+This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment. It uses a simple in memory key value store for the account takeover demo portion.
 
 ## Blob Storage Testing
 
-The application includes scripts to test and verify Vercel Blob storage functionality:
+I have included some scripts to test and verify Vercel Blob storage functionality:
 
 ### Test Blob Upload
 
@@ -200,6 +207,7 @@ After sending the webhook, you can verify it was received by:
 
 2. Viewing the webhook events in the UI:
    - Navigate to the main page to see events for the current visitor
+   - Visit the dashboard to see a more detailed view
    - Go to the `/webhooks` page to see all webhook events
 
 ## Deployment
@@ -210,77 +218,3 @@ This application is designed to be deployed on Vercel:
 npm run build
 npm run deploy
 ```
-
-In production, the application will use Vercel Blob for database storage.
-
-### Authentication in Production
-
-When deploying to production, make sure to set the following environment variables in your Vercel project settings:
-
-1. `NEXTAUTH_SECRET` - A secure random string for encrypting cookies
-2. `ADMIN_PASSWORD` - The password for the admin user
-
-For security best practices:
-- Generate a new secure random string for `NEXTAUTH_SECRET` for each environment
-- Use a strong, unique password for `ADMIN_PASSWORD`
-- Consider implementing additional security measures like rate limiting for login attempts
-
-## Troubleshooting
-
-### Authentication Issues
-
-If you encounter issues with authentication:
-
-1. **Check Environment Variables**: Ensure `NEXTAUTH_SECRET` and `ADMIN_PASSWORD` are correctly set in your `.env.local` file or Vercel project settings.
-
-2. **Cookie Issues**: If your authentication isn't persisting between page refreshes:
-   - Check that cookies are being set correctly (you can inspect this in your browser's developer tools)
-   - Ensure your `NEXTAUTH_SECRET` is properly set
-   - Check that your browser isn't blocking cookies
-
-3. **Login Errors**: If you're getting errors during login:
-   - Verify that the username is exactly "admin"
-   - Check that the password matches the `ADMIN_PASSWORD` environment variable
-   - Look for error messages in the browser console or server logs
-
-4. **Middleware Errors**: If you're being redirected in a loop or getting middleware errors:
-   - Ensure the middleware configuration is correct
-   - Check that the public paths are properly defined
-   - Verify that cookies are being properly read in the middleware
-
-5. **API Route Errors**: If you're getting errors from the authentication API routes:
-   - Check that all required environment variables are set
-   - Look for error messages in the server logs
-   - Ensure the API routes are properly implemented
-
-### Blob Storage Issues
-
-If you encounter issues with blob storage in production:
-
-1. **Verify Environment Variables**: Ensure `BLOB_READ_WRITE_TOKEN` is correctly set in your Vercel project settings.
-
-2. **Test Blob Access**: Run the blob test scripts to verify your token and access:
-   ```bash
-   # Test uploading to blob storage
-   node scripts/test-blob-upload.js
-   
-   # List all blobs to verify they exist
-   node scripts/blob-list.js
-   ```
-
-3. **Check Logs**: Look for error messages containing "Error uploading database to Blob storage" or "BLOB_READ_WRITE_TOKEN not found".
-
-4. **Token Permissions**: Verify your token has read/write permissions by checking in the Vercel dashboard.
-
-5. **Database Persistence**: If data is being stored but not persisted between requests, it may indicate the database is being written to the temporary file system but not uploaded to blob storage.
-
-6. **Serverless Function Timeout**: Ensure your function isn't timing out before the blob upload completes. Consider optimizing database operations for faster execution.
-
-7. **Blob Storage Limits**: Check if you've reached any storage limits in your Vercel plan.
-
-### Common Solutions
-
-- Regenerate your `BLOB_READ_WRITE_TOKEN` in the Vercel dashboard
-- Ensure proper error handling in your application code
-- Add additional logging to pinpoint where failures occur
-- Test with smaller database files to rule out size limitations
