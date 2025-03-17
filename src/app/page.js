@@ -16,10 +16,11 @@ export default function LandingPage() {
           <div className="inline-block mb-6">
             <div className="flex items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-full shadow-md">
               <Image 
-                src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/FP_Orange.png`}
+                src="/FP_Orange.png"
                 alt="Fingerprint"
                 width={60}
                 height={60}
+                priority
               />
             </div>
           </div>
