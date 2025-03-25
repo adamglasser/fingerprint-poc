@@ -10,8 +10,7 @@ function getFingerPrintClient() {
 }
 
 async function buildSummary(visitorId, client){
-  console.log('the visitorId is', visitorId)
-  console.log('the client is', client)
+
    if (!visitorId || !client) {
      throw new Error('Missing required parameters: visitorId and client');
    }
@@ -26,9 +25,10 @@ async function buildSummary(visitorId, client){
    if (visits.visits && visits.visits.length > 0) {
      const latestVisit = visits.visits[0];
      const eventDetails = await client.getEvent(latestVisit.requestId);
-     
+     console.log('the latestEventDetails are', latestVisit)
      result = {
        visitorId,
+       confidence: latestVisit.confidence,
        visitCount: visits.visits.length,
        firstSeen: visits.visits[visits.visits.length - 1].timestamp,
        lastSeen: latestVisit.timestamp,

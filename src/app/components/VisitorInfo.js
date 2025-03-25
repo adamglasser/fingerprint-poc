@@ -25,7 +25,7 @@ export default function VisitorInfo() {
   const {
     isLoading,
     error,
-    data: visitorData,
+    data: initialVisitorData,
   } = useVisitorData({immediate: true});
 
   const [sealedResult, setSealedResult] = useState(null);
@@ -42,6 +42,12 @@ export default function VisitorInfo() {
   });
   const [manualEventLoading, setManualEventLoading] = useState(false);
   const [expandedJSON, setExpandedJSON] = useState(false);
+  const [visitorData, setVisitorData] = useState(initialVisitorData);
+
+  // Update visitorData when initialVisitorData changes
+  useEffect(() => {
+    setVisitorData(initialVisitorData);
+  }, [initialVisitorData]);
 
   // Function to call the server API
   const fetchServerData = async (visitorId, action = 'getVisitorSummary', additionalParams = {}) => {
@@ -106,7 +112,22 @@ export default function VisitorInfo() {
       
       const data = await response.json();
       
+      // Set the server data and mark that we've processed the sealed result
       setServerData(data);
+      setSealedResult(sealedResult); // Mark this sealed result as processed
+
+      // If the unsealed data contains visitor information, update the visitorData
+      if (data.visitorId) {
+        // Create a new visitorData object with the unsealed information
+        const updatedVisitorData = {
+          ...visitorData, // Keep existing visitorData
+          ...data, // Spread the unsealed data 
+          visitorId: data.visitorId, // Ensure these specific fields are set correctly
+          confidence: data.confidence || visitorData.confidence,
+          requestId: data.requestId || visitorData.requestId,
+        };
+        setVisitorData(updatedVisitorData);
+      }
       
     } catch (err) {
       setServerError(err.message);
@@ -118,16 +139,17 @@ export default function VisitorInfo() {
 
   useEffect(() => {
     if (visitorData) {
-      // If we have a sealed result, send it to be unsealed
-      if (visitorData.sealedResult) {
+      // If we have a sealed result and haven't processed it yet
+      if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
         sendSealedResult(visitorData.sealedResult);
       } 
-      // Otherwise fall back to the regular visitor data flow
-      else if (visitorData.visitorId) {
+      // Only fall back to regular visitor data flow if we don't have a sealed result
+      // or if we've already processed the sealed result
+      else if (visitorData.visitorId && (!visitorData.sealedResult || visitorData.sealedResult === sealedResult)) {
         fetchServerData(visitorData.visitorId);
       }
     }
-  }, [visitorData]);
+  }, [visitorData, sealedResult]);
 
   // Handle tab changes
   const handleTabChange = (tab) => {
