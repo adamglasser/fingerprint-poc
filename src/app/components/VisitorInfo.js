@@ -26,8 +26,9 @@ export default function VisitorInfo() {
     isLoading,
     error,
     data: visitorData,
-  } = useVisitorData();
+  } = useVisitorData({immediate: true});
 
+  const [sealedResult, setSealedResult] = useState(null);
   const [serverData, setServerData] = useState(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
@@ -79,12 +80,53 @@ export default function VisitorInfo() {
     }
   };
 
-  // When we get visitorId from the client-side library, fetch server data
-  useEffect(() => {
-    if (visitorData?.visitorId) {
-      fetchServerData(visitorData.visitorId);
+  // Decrypt the sealed result
+  const sendSealedResult = async (sealedResult) => {
+    if (!sealedResult) return;
+    
+    setServerLoading(true);
+    setServerError(null);
+    
+    try {
+      const response = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unsealResult',
+          sealedResult: sealedResult
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unseal result');
+      }
+      
+      const data = await response.json();
+      setServerData(data);
+      
+    } catch (err) {
+      setServerError(err.message);
+      console.error('Error unsealing result:', err);
+    } finally {
+      setServerLoading(false);
     }
-  }, [visitorData?.visitorId]);
+  };
+
+  useEffect(() => {
+    if (visitorData) {
+      // If we have a sealed result, send it to be unsealed
+      if (visitorData.sealedResult) {
+        sendSealedResult(visitorData.sealedResult);
+      } 
+      // Otherwise fall back to the regular visitor data flow
+      else if (visitorData.visitorId) {
+        fetchServerData(visitorData.visitorId);
+      }
+    }
+  }, [visitorData]);
 
   // Handle tab changes
   const handleTabChange = (tab) => {
