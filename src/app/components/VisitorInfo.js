@@ -25,9 +25,10 @@ export default function VisitorInfo() {
   const {
     isLoading,
     error,
-    data: visitorData,
-  } = useVisitorData();
+    data: initialVisitorData,
+  } = useVisitorData({immediate: true});
 
+  const [sealedResult, setSealedResult] = useState(null);
   const [serverData, setServerData] = useState(null);
   const [serverLoading, setServerLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
@@ -41,6 +42,12 @@ export default function VisitorInfo() {
   });
   const [manualEventLoading, setManualEventLoading] = useState(false);
   const [expandedJSON, setExpandedJSON] = useState(false);
+  const [visitorData, setVisitorData] = useState(initialVisitorData);
+
+  // Update visitorData when initialVisitorData changes
+  useEffect(() => {
+    setVisitorData(initialVisitorData);
+  }, [initialVisitorData]);
 
   // Function to call the server API
   const fetchServerData = async (visitorId, action = 'getVisitorSummary', additionalParams = {}) => {
@@ -79,12 +86,70 @@ export default function VisitorInfo() {
     }
   };
 
-  // When we get visitorId from the client-side library, fetch server data
-  useEffect(() => {
-    if (visitorData?.visitorId) {
-      fetchServerData(visitorData.visitorId);
+  // Decrypt the sealed result
+  const sendSealedResult = async (sealedResult) => {
+    if (!sealedResult) return;
+    
+    setServerLoading(true);
+    setServerError(null);
+    
+    try {
+      const response = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unsealResult',
+          sealedResult: sealedResult
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unseal result');
+      }
+      
+      const data = await response.json();
+      
+      // Set the server data and mark that we've processed the sealed result
+      setServerData(data);
+      setSealedResult(sealedResult); // Mark this sealed result as processed
+
+      // If the unsealed data contains visitor information, update the visitorData
+      if (data.visitorId) {
+        // Create a new visitorData object with the unsealed information
+        const updatedVisitorData = {
+          ...visitorData, // Keep existing visitorData
+          ...data, // Spread the unsealed data 
+          visitorId: data.visitorId, // Ensure these specific fields are set correctly
+          confidence: data.confidence || visitorData.confidence,
+          requestId: data.requestId || visitorData.requestId,
+        };
+        setVisitorData(updatedVisitorData);
+      }
+      
+    } catch (err) {
+      setServerError(err.message);
+      console.error('Error unsealing result:', err);
+    } finally {
+      setServerLoading(false);
     }
-  }, [visitorData?.visitorId]);
+  };
+
+  useEffect(() => {
+    if (visitorData) {
+      // If we have a sealed result and haven't processed it yet
+      if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
+        sendSealedResult(visitorData.sealedResult);
+      } 
+      // Only fall back to regular visitor data flow if we don't have a sealed result
+      // or if we've already processed the sealed result
+      else if (visitorData.visitorId && (!visitorData.sealedResult || visitorData.sealedResult === sealedResult)) {
+        fetchServerData(visitorData.visitorId);
+      }
+    }
+  }, [visitorData, sealedResult]);
 
   // Handle tab changes
   const handleTabChange = (tab) => {

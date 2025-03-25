@@ -1,4 +1,4 @@
-import { FingerprintJsServerApiClient, Region } from '@fingerprintjs/fingerprintjs-pro-server-api';
+import { FingerprintJsServerApiClient, Region, unsealEventsResponse } from '@fingerprintjs/fingerprintjs-pro-server-api';
 import { NextResponse } from 'next/server';
 
 // Function to initialize the Fingerprint client
@@ -9,6 +9,37 @@ function getFingerPrintClient() {
   });
 }
 
+async function buildSummary(visitorId, client){
+
+   if (!visitorId || !client) {
+     throw new Error('Missing required parameters: visitorId and client');
+   }
+
+   // Get a limited set of visits
+   const visits = await client.getVisits(visitorId, { limit: 50 });
+   
+   // Initialize result as null
+   let result = null;
+   
+   // If we have visits, fetch the most recent event details
+   if (visits.visits && visits.visits.length > 0) {
+     const latestVisit = visits.visits[0];
+     const eventDetails = await client.getEvent(latestVisit.requestId);
+     console.log('the latestEventDetails are', latestVisit)
+     result = {
+       visitorId,
+       confidence: latestVisit.confidence,
+       visitCount: visits.visits.length,
+       firstSeen: visits.visits[visits.visits.length - 1].timestamp,
+       lastSeen: latestVisit.timestamp,
+       latestEventDetails: eventDetails,
+       recentVisits: visits.visits.slice(0, 5), // Include 5 most recent visits
+     };
+   }
+   
+   return result;
+}
+
 export async function POST(request) {
   
   
@@ -16,6 +47,7 @@ export async function POST(request) {
   try {
     const { 
       action, 
+      sealedResult,
       visitorId, 
       requestId, 
       filters,
@@ -33,7 +65,8 @@ export async function POST(request) {
     const client = getFingerPrintClient();
     
     let result;
-    
+
+
     switch (action) {
       // Visitor operations
       case 'getVisitorData':
@@ -93,28 +126,50 @@ export async function POST(request) {
           return NextResponse.json({ error: 'Missing visitorId' }, { status: 400 });
         }
         
-        // Get a limited set of visits
-        const visits = await client.getVisits(visitorId, { limit: 50 });
+        result = await buildSummary(visitorId, client)
+        break;
+      
+      
+      //handle sealed client result
+      case 'unsealResult':
+        if (!sealedResult) {
+          return NextResponse.json({ error: 'Missing sealedResult' }, { status: 400 });
+        }
         
-        // If we have visits, fetch the most recent event details
-        if (visits.visits && visits.visits.length > 0) {
-          const latestVisit = visits.visits[0];
-          const eventDetails = await client.getEvent(latestVisit.requestId);
+        try {
+          // Get the decryption key from environment variables
+          const decryptionKey = process.env.FP_ENCRYPTION_KEY;
           
-          result = {
-            visitorId,
-            visitCount: visits.visits.length,
-            firstSeen: visits.visits[visits.visits.length - 1].timestamp,
-            lastSeen: latestVisit.timestamp,
-            latestEventDetails: eventDetails,
-            recentVisits: visits.visits.slice(0, 5), // Include 5 most recent visits
-          };
-        } else {
-          result = { visitorId, visitCount: 0 };
+          if (!decryptionKey) {
+            return NextResponse.json({ error: 'Decryption key not configured' }, { status: 500 });
+          }
+          
+          // Unseal the result
+          let unsealedResult = await unsealEventsResponse(
+            Buffer.from(sealedResult, 'base64'), 
+            [
+              {
+                key: Buffer.from(decryptionKey, 'base64'),
+                algorithm: 'aes-256-gcm',
+              }
+            ]
+          );
+          if (unsealedResult.products.identification.data.visitorId) {
+            result = await buildSummary(unsealedResult.products.identification.data.visitorId, client)
+            console.log('the result is', result)
+          } else {
+            throw new Error('Missing visitorId from unsealed result')
+          }
+        } catch (unsealError) {
+          console.error('Error unsealing result:', unsealError);
+          return NextResponse.json(
+            { error: 'Failed to unseal result', details: unsealError.message },
+            { status: 400 }
+          );
         }
         break;
-        
-      default:
+      
+        default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
     

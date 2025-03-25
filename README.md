@@ -18,7 +18,28 @@ A proof-of-concept application for integrating with Fingerprint Pro for visitor 
    # Authentication
    NEXTAUTH_SECRET=your_secret_key
    ADMIN_PASSWORD=your_admin_password
+
+   # Sealed Client Results (Optional)
+   FP_ENCRYPTION_KEY=your_encryption_key
    ```
+
+### Sealed Client Results
+
+This application supports Fingerprint's sealed client results feature, which provides enhanced security by encrypting the client-side identification results. The sealed results are automatically unsealed on the server side.
+
+To enable sealed client results:
+
+1. Make sure your Fingerprint Pro account has sealed client results enabled
+2. Set the following environment variable in your `.env.local`:
+   ```
+   FP_ENCRYPTION_KEY=your_encryption_key
+   ```
+
+The application will automatically:
+- Receive sealed results from the client
+- Unseal the results on the server using your encryption key
+- Display the unsealed visitor information in the UI
+- Maintain the same functionality as with unsealed results
 
 ### Login Credentials
 ## This is for the dashboard page only
