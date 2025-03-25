@@ -34,15 +34,15 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <FpjsProvider
-          loadOptions={{
-            apiKey: process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY,
-            endpoint: "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/uVlgRwunV0GJub6T",
-            scriptUrlPattern: [
-              "https://fpmetricslogger.us/Q1ZiZuhwbVJgq4ZP/wFTswDFEmr2aX2ki?apiKey=<apiKey>&version=<version>&loaderVersion=<loaderVersion>",
-            ]
-          }}
-        >
+      <FpjsProvider
+        loadOptions={{
+          apiKey: process.env.NEXT_PUBLIC_FINGERPRINT_API_KEY,
+          endpoint: "https://fingerprint-proxy-for-open-client-response.adam-glasser.workers.dev/getResult",
+          scriptUrlPattern: [
+            "https://fingerprint-proxy-for-open-client-response.adam-glasser.workers.dev/agent?apiKey=<apiKey>&version=<version>&loaderVersion=<loaderVersion>",
+          ]
+        }}
+      >
           <Header />
           <main className="flex-grow">
             {children}
