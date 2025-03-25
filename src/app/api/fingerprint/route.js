@@ -155,8 +155,8 @@ export async function POST(request) {
             ]
           );
           if (unsealedResult.products.identification.data.visitorId) {
-          let result = await buildSummary(unsealedResult.products.identification.data.visitorId, client)
-          console.log('the result is', result)
+            result = await buildSummary(unsealedResult.products.identification.data.visitorId, client)
+            console.log('the result is', result)
           } else {
             throw new Error('Missing visitorId from unsealed result')
           }

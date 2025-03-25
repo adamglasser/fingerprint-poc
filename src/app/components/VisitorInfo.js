@@ -105,6 +105,7 @@ export default function VisitorInfo() {
       }
       
       const data = await response.json();
+      
       setServerData(data);
       
     } catch (err) {
