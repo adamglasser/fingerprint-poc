@@ -21,13 +21,76 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showMfaPrompt, setShowMfaPrompt] = useState(false);
+  const [sealedResult, setSealedResult] = useState(null);
+  const [visitorData, setVisitorData] = useState(null);
 
   // Get the visitor's fingerprint
   const {
     isLoading: isFingerprintLoading,
     error: fingerprintError,
-    data: visitorData,
+    data: initialVisitorData,
   } = useVisitorData({ immediate: true });
+
+  // Update visitorData when initialVisitorData changes
+  useEffect(() => {
+    if (initialVisitorData) {
+      setVisitorData(initialVisitorData);
+    }
+  }, [initialVisitorData]);
+
+  // Decrypt the sealed result
+  const sendSealedResult = async (sealedResult) => {
+    if (!sealedResult) {
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unsealResult',
+          sealedResult: sealedResult
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unseal result');
+      }
+      
+      const data = await response.json();
+      
+      // Set the server data and mark that we've processed the sealed result
+      setSealedResult(sealedResult);
+
+      // If the unsealed data contains visitor information, update the visitorData
+      if (data.visitorId) {
+        const updatedVisitorData = {
+          ...visitorData,
+          ...data,
+          visitorId: data.visitorId,
+          confidence: data.confidence || visitorData.confidence,
+          requestId: data.requestId || visitorData.requestId,
+        };
+        setVisitorData(updatedVisitorData);
+      }
+      
+    } catch (err) {
+      // Error handling without console logging
+    }
+  };
+
+  useEffect(() => {
+    if (visitorData) {
+      // If we have a sealed result and haven't processed it yet
+      if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
+        sendSealedResult(visitorData.sealedResult);
+      }
+    }
+  }, [visitorData, sealedResult]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,8 +109,6 @@ export default function Login() {
     setMessage({ type: '', text: '' });
     
     try {
-      console.log('Sending login request with fingerprint:', visitorData.visitorId);
-      
       const response = await fetch('/api/account-takeover-demo/login', {
         method: 'POST',
         headers: {
@@ -61,14 +122,12 @@ export default function Login() {
       });
       
       const data = await response.json();
-      console.log('Login API response:', data);
       
       if (response.ok) {
         // Check if login was successful
         if (data.success) {
           // Check for fingerprint match status
           if (data.fingerprintMatch === false) {
-            console.log('New device detected, showing MFA prompt');
             // Show MFA prompt for fingerprint mismatch
             setShowMfaPrompt(true);
             setMessage({ 
@@ -77,7 +136,6 @@ export default function Login() {
             });
           } else {
             // Normal login success with matching fingerprint
-            console.log('Login successful with matching fingerprint');
             // Store user info in session
             sessionStorage.setItem('loggedInUser', username);
             sessionStorage.setItem('fingerprintVerified', 'true');
@@ -94,11 +152,9 @@ export default function Login() {
         }
       } else {
         // HTTP error response
-        console.log('Login HTTP error:', response.status, data);
         setMessage({ type: 'error', text: data.error || 'Login failed. Please check your credentials.' });
       }
     } catch (error) {
-      console.error('Login error:', error);
       setMessage({ type: 'error', text: 'An error occurred during login. Please try again.' });
     } finally {
       setIsLoading(false);
@@ -110,8 +166,6 @@ export default function Login() {
     setMessage({ type: 'info', text: 'Verifying device...' });
     
     try {
-      console.log('Adding new fingerprint for:', username);
-      
       const response = await fetch('/api/account-takeover-demo/add-fingerprint', {
         method: 'POST',
         headers: {
@@ -124,11 +178,9 @@ export default function Login() {
       });
       
       const data = await response.json();
-      console.log('Add fingerprint response:', data);
       
       if (response.ok && data.success) {
         // Fingerprint added successfully
-        console.log('New fingerprint saved successfully');
         
         // Update session
         sessionStorage.setItem('loggedInUser', username);
@@ -147,14 +199,12 @@ export default function Login() {
           router.push('/account-takeover-demo/dashboard');
         }, 1500);
       } else {
-        console.error('Failed to save fingerprint:', data.error);
         setMessage({ 
           type: 'error', 
           text: data.error || 'Failed to verify device. Please try again.' 
         });
       }
     } catch (error) {
-      console.error('Error verifying device:', error);
       setMessage({ 
         type: 'error', 
         text: 'An error occurred while verifying your device. Please try again.' 

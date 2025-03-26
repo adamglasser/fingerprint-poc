@@ -143,25 +143,95 @@ export async function POST(request) {
           if (!decryptionKey) {
             return NextResponse.json({ error: 'Decryption key not configured' }, { status: 500 });
           }
-          
-          // Unseal the result
-          let unsealedResult = await unsealEventsResponse(
-            Buffer.from(sealedResult, 'base64'), 
-            [
-              {
-                key: Buffer.from(decryptionKey, 'base64'),
-                algorithm: 'aes-256-gcm',
-              }
-            ]
-          );
-          if (unsealedResult.products.identification.data.visitorId) {
-            result = await buildSummary(unsealedResult.products.identification.data.visitorId, client)
-            console.log('the result is', result)
-          } else {
-            throw new Error('Missing visitorId from unsealed result')
+
+          // Log the received sealed result
+          console.log('Server received sealed result:', {
+            length: sealedResult.length,
+            firstChars: sealedResult.substring(0, 50),
+            lastChars: sealedResult.substring(sealedResult.length - 50),
+            containsWhitespace: /\s/.test(sealedResult),
+            containsInvalidChars: /[^A-Za-z0-9+/=]/.test(sealedResult)
+          });
+
+          // Validate base64 format
+          if (!/^[A-Za-z0-9+/=]+$/.test(sealedResult)) {
+            console.error('Invalid base64 format detected');
+            return NextResponse.json(
+              { error: 'Invalid base64 format in sealed result' },
+              { status: 400 }
+            );
+          }
+
+          // Try to decode the base64 string first
+          try {
+            const decoded = Buffer.from(sealedResult, 'base64');
+            console.log('Base64 decode successful:', {
+              decodedLength: decoded.length,
+              isBuffer: Buffer.isBuffer(decoded)
+            });
+          } catch (decodeError) {
+            console.error('Base64 decode error:', decodeError);
+            return NextResponse.json(
+              { error: 'Failed to decode base64 string' },
+              { status: 400 }
+            );
+          }
+
+          // Log the decryption key (first few chars only for security)
+          console.log('Decryption key:', {
+            length: decryptionKey.length,
+            firstChars: decryptionKey.substring(0, 10) + '...'
+          });
+
+          try {
+            // Try to create the buffer first to catch any encoding issues
+            const sealedBuffer = Buffer.from(sealedResult, 'base64');
+            console.log('Successfully created sealed buffer:', {
+              length: sealedBuffer.length,
+              type: sealedBuffer.constructor.name
+            });
+
+            const keyBuffer = Buffer.from(decryptionKey, 'base64');
+            console.log('Successfully created key buffer:', {
+              length: keyBuffer.length,
+              type: keyBuffer.constructor.name
+            });
+
+            // Unseal the result
+            let unsealedResult = await unsealEventsResponse(
+              sealedBuffer,
+              [
+                {
+                  key: keyBuffer,
+                  algorithm: 'aes-256-gcm',
+                }
+              ]
+            );
+
+            console.log('Successfully unsealed result:', {
+              hasVisitorId: !!unsealedResult.products.identification.data.visitorId,
+              visitorId: unsealedResult.products.identification.data.visitorId
+            });
+
+            if (unsealedResult.products.identification.data.visitorId) {
+              result = await buildSummary(unsealedResult.products.identification.data.visitorId, client)
+            } else {
+              throw new Error('Missing visitorId from unsealed result')
+            }
+          } catch (bufferError) {
+            console.error('Buffer creation error:', {
+              name: bufferError.name,
+              message: bufferError.message,
+              stack: bufferError.stack
+            });
+            throw bufferError;
           }
         } catch (unsealError) {
-          console.error('Error unsealing result:', unsealError);
+          console.error('Error unsealing result:', {
+            name: unsealError.name,
+            message: unsealError.message,
+            stack: unsealError.stack
+          });
           return NextResponse.json(
             { error: 'Failed to unseal result', details: unsealError.message },
             { status: 400 }

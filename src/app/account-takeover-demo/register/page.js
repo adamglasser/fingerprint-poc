@@ -14,18 +14,90 @@ import {
 import { useVisitorData } from '@fingerprintjs/fingerprintjs-pro-react';
 
 export default function Register() {
+  // console.log('Register component rendering');
+  
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [sealedResult, setSealedResult] = useState(null);
+  const [visitorData, setVisitorData] = useState(null);
 
   // Get the visitor's fingerprint
+  // console.log('About to initialize useVisitorData hook');
   const {
     isLoading: isFingerprintLoading,
     error: fingerprintError,
-    data: visitorData,
+    data: initialVisitorData,
   } = useVisitorData({ immediate: true });
+  // console.log('useVisitorData hook initialized');
+
+  // Update visitorData when initialVisitorData changes
+  useEffect(() => {
+    setVisitorData(initialVisitorData);
+  }, [initialVisitorData]);
+
+  // Decrypt the sealed result
+  const sendSealedResult = async (sealedResult) => {
+    if (!sealedResult) return;
+    
+    try {
+      const response = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unsealResult',
+          sealedResult: sealedResult
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unseal result');
+      }
+      
+      const data = await response.json();
+      
+      // Set the server data and mark that we've processed the sealed result
+      setSealedResult(sealedResult); // Mark this sealed result as processed
+
+      // If the unsealed data contains visitor information, update the visitorData
+      if (data.visitorId) {
+        // Create a new visitorData object with the unsealed information
+        const updatedVisitorData = {
+          ...visitorData, // Keep existing visitorData
+          ...data, // Spread the unsealed data 
+          visitorId: data.visitorId, // Ensure these specific fields are set correctly
+          confidence: data.confidence || visitorData.confidence,
+          requestId: data.requestId || visitorData.requestId,
+        };
+        setVisitorData(updatedVisitorData);
+      }
+      
+    } catch (err) {
+      // console.error('Error unsealing result:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (visitorData) {
+      // If we have a sealed result and haven't processed it yet
+      if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
+        sendSealedResult(visitorData.sealedResult);
+      }
+    }
+  }, [visitorData, sealedResult]);
+
+  useEffect(() => {
+    // console.log('Register component mounted');
+    // console.log('Fingerprint Pro Debug:');
+    // console.log('- Loading state:', isFingerprintLoading);
+    // console.log('- Error:', fingerprintError);
+    // console.log('- Visitor data:', visitorData);
+  }, [isFingerprintLoading, fingerprintError, visitorData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,11 +157,11 @@ export default function Register() {
             router.push('/account-takeover-demo/dashboard');
           } else {
             // If automatic login fails, redirect to login page
-            console.error('Automatic login failed:', loginData.error);
+            // console.error('Automatic login failed:', loginData.error);
             router.push('/account-takeover-demo/login');
           }
         } catch (error) {
-          console.error('Automatic login error:', error);
+          // console.error('Automatic login error:', error);
           // Fallback to login page if automatic login fails
           window.location.href = '/account-takeover-demo/login';
         }
@@ -97,7 +169,7 @@ export default function Register() {
         setMessage({ type: 'error', text: data.error || 'Registration failed. Please try again.' });
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      // console.error('Registration error:', error);
       setMessage({ type: 'error', text: 'An error occurred during registration. Please try again.' });
     } finally {
       setIsLoading(false);
