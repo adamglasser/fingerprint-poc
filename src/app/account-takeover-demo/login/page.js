@@ -15,6 +15,8 @@ import {
 import { useVisitorData } from '@fingerprintjs/fingerprintjs-pro-react';
 
 export default function Login() {
+  console.log('Login component rendering');
+  
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,11 +25,22 @@ export default function Login() {
   const [showMfaPrompt, setShowMfaPrompt] = useState(false);
 
   // Get the visitor's fingerprint
+  console.log('About to initialize useVisitorData hook');
   const {
     isLoading: isFingerprintLoading,
     error: fingerprintError,
     data: visitorData,
   } = useVisitorData({ immediate: true });
+  console.log('useVisitorData hook initialized');
+
+  // Add debug logging for Fingerprint Pro
+  useEffect(() => {
+    console.log('Login component mounted');
+    console.log('Fingerprint Pro Debug:');
+    console.log('- Loading state:', isFingerprintLoading);
+    console.log('- Error:', fingerprintError);
+    console.log('- Visitor data:', visitorData);
+  }, [isFingerprintLoading, fingerprintError, visitorData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
