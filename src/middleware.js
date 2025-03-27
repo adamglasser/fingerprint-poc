@@ -9,7 +9,8 @@ const publicPaths = [
   "/api/auth/session",
   "/webhooks",
   "/api/webhooks",
-  "/api/fingerprint-webhook"
+  "/api/fingerprint-webhook",
+  "/api/fingerprint"
 ];
 
 // Function to check if a path should be accessible without authentication
@@ -75,14 +76,11 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - api/auth/login (login endpoint)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.svg|api/auth/login).*)",
+    // Match all paths except those that start with:
+    // - api/auth/login (login endpoint)
+    // - _next (Next.js internals)
+    // - favicon.ico
+    // - svg files
+    "/((?!api/auth/login|_next|favicon.ico|.*\\.svg).*)",
   ],
 }; 
