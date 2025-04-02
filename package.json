@@ -14,17 +14,13 @@
     "@fingerprintjs/fingerprintjs-pro-react": "^2.6.3",
     "@fingerprintjs/fingerprintjs-pro-server-api": "^6.2.0",
     "@neondatabase/serverless": "^1.0.0",
-    "@vercel/blob": "^0.27.3",
     "@vercel/kv": "^3.0.0",
-    "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.479.0",
     "next": "15.2.1",
     "ngrok": "^5.0.0-beta.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -13,7 +13,10 @@ A proof-of-concept application for integrating with Fingerprint Pro for visitor 
    ```
    NEXT_PUBLIC_FINGERPRINT_PUBLIC_API_KEY=your_public_api_key
    FINGERPRINT_SECRET_API_KEY=your_secret_api_key
-   BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+   
+   # Neon PostgreSQL Database
+   DATABASE_URL=your_neon_connection_string
+   DATABASE_URL_UNPOOLED=your_neon_unpooled_connection_string
    
    # Authentication
    NEXTAUTH_SECRET=your_secret_key
@@ -116,118 +119,35 @@ The application includes a webhook endpoint that receives events from Fingerprin
 
 To access the webhooks page, click the "View All Events" button on the main page or dashboard, or navigate to `/webhooks`.
 
-
 ## Database
 
-This application uses SQLite for local development and Vercel Blob for production data storage. The database automatically switches between local and cloud storage based on the environment. It uses a simple in memory key value store for the account takeover demo portion.
+This application uses Neon PostgreSQL, a serverless Postgres database, for both development and production environments. The database connection automatically adapts to the environment (development or production).
 
-## Vercel Blob Management
+### Neon PostgreSQL Configuration
 
-This application includes several scripts to help manage Vercel Blob storage:
+1. Create a Neon project at https://console.neon.tech/
+2. Get your connection strings from the Neon dashboard
+3. Add them to your `.env.local` file:
+   ```
+   # Recommended for most uses
+   DATABASE_URL=postgres://user:password@host/dbname?sslmode=require
 
-### List Blobs
+   # For uses requiring a connection without pgbouncer
+   DATABASE_URL_UNPOOLED=postgresql://user:password@host/dbname?sslmode=require
+   ```
 
-To list all blobs in your Vercel Blob storage:
+### Database Implementation
 
-```bash
-node scripts/list-blobs.js
-```
+The application uses the `@neondatabase/serverless` driver which supports two connection methods:
 
-To list blobs with a specific prefix:
+1. **HTTP-based connections** (via `neon()`) - Used for simple, one-off queries
+2. **WebSocket-based connections** (via `Pool`) - Used for transaction support and maintaining compatibility with node-postgres interfaces
 
-```bash
-node scripts/list-blobs.js fingerprint-database
-```
-
-### Cleanup Database Blobs
-
-Over time, your Vercel Blob storage may accumulate many database backup files. You can clean these up while keeping only the most recent ones:
-
-```bash
-node scripts/cleanup-blobs.js
-```
-
-By default, this script:
-1. Lists all blobs with the prefix 'fingerprint-database'
-2. Keeps the 5 most recent database blobs
-3. Deletes all older database blobs
-
-You can modify the `keepCount` variable in the script to change how many recent blobs to keep.
-
-### Comprehensive Blob Cleanup
-
-To clean up all non-essential blobs while preserving important files:
-
-```bash
-node scripts/cleanup-all-blobs.js
-```
-
-This script:
-1. Keeps all blobs in the `images/` subfolder
-2. Keeps the 5 most recent database blobs
-3. Deletes all other blobs
-
-This is useful for reducing your storage usage while ensuring you don't delete important application assets.
-
-### Delete Single Blob
-
-For testing or targeted deletion, you can use:
-
-```bash
-node scripts/delete-single-blob.js
-```
-
-This script will find and delete the oldest blob with the 'fingerprint-database' prefix.
-
-### Troubleshooting Blob Storage
-
-If you encounter issues with Vercel Blob storage:
-
-1. Verify your BLOB_READ_WRITE_TOKEN is set correctly in .env.local
-2. Check that you're not hitting storage limits
-3. Use the list-blobs.js script to see what's currently stored
-4. Run the cleanup-blobs.js script to reduce storage usage
-
-## Blob Storage Testing
-
-I have included some scripts to test and verify Vercel Blob storage functionality:
-
-### Test Blob Upload
-
-This script tests the ability to upload files to Vercel Blob storage:
-
-```bash
-node scripts/test-blob-upload.js
-```
-
-The script will:
-1. Create a small test file with a timestamp
-2. Upload it to Vercel Blob storage
-3. List all blobs in your project to verify the upload
-4. Display detailed information about each blob
-
-### List Blobs
-
-This script lists all blobs in your Vercel Blob storage:
-
-```bash
-node scripts/blob-list.js
-```
-
-The script will:
-1. Connect to Vercel Blob storage using your token
-2. List all available blobs in your project
-3. Display detailed information including pathname and size
-4. Show the complete API response for debugging
-
-These scripts are useful for:
-- Verifying your Vercel Blob storage configuration
-- Debugging blob storage issues in production
-- Confirming that your `BLOB_READ_WRITE_TOKEN` is valid and working
+The implementation includes compatibility layers for both methods, making it easy to work with the database regardless of your preferred approach.
 
 ## CLI Tool
 
-A command-line interface tool is provided for managing visitor data. The CLI tool uses a local SQLite database stored in the `./data` directory.
+A command-line interface tool is provided for managing visitor data. The CLI tool accesses the same Neon PostgreSQL database as the web application.
 
 ### Available Commands
 
@@ -248,7 +168,7 @@ To test Fingerprint webhooks locally, you need to expose your local server to th
 
 ### Setting up ngrok
 
-1. Install ngrok if you haven't already:
+1. Make sure ngrok is installed:
    ```bash
    npm install -g ngrok
    ```
@@ -258,51 +178,57 @@ To test Fingerprint webhooks locally, you need to expose your local server to th
    npm run dev
    ```
 
-3. In a separate terminal, start ngrok to create a tunnel to your local server:
+3. In a separate terminal, start ngrok:
    ```bash
-   ngrok http 3000
+   npx ngrok http 3000
    ```
 
-4. ngrok will provide a public URL (e.g., `https://ea5d-69-145-58-111.ngrok-free.app`). Copy this URL.
+4. Copy the HTTPS URL provided by ngrok (e.g., https://your-temporary-subdomain.ngrok.io)
 
-### Configuring Fingerprint Webhooks
+5. In your Fingerprint Pro dashboard:
+   - Go to Webhooks settings
+   - Add a new webhook with the ngrok URL + `/api/webhook-receiver`
+   - Example: `https://your-temporary-subdomain.ngrok.io/api/webhook-receiver`
+   - Select the events you want to receive
+   - Save the webhook
 
-1. Go to your Fingerprint dashboard
-2. Navigate to the Webhooks section
-3. Add a new webhook with the ngrok URL + `/api/fingerprint-webhook` path:
+6. After configuring the webhook, visit your local application at http://localhost:3000 
+   - Generate some traffic
+   - Check the webhook events in your application UI
+
+## Production Deployment
+
+When deploying to production (e.g., Vercel), make sure to set all required environment variables:
+
+### Required Environment Variables
+
+1. **Fingerprint API Keys**:
    ```
-   https://ea5d-69-145-58-111.ngrok-free.app/api/fingerprint-webhook
-   ```
-4. Select the events you want to receive (e.g., identification)
-5. Save the webhook configuration
-
-### Testing the Webhook
-
-You can test the webhook by sending a POST request to your ngrok URL:
-
-```bash
-curl -X POST https://ea5d-69-145-58-111.ngrok-free.app/api/fingerprint-webhook \
-  -H "Content-Type: application/json" \
-  -d '{"requestId":"test123","visitorId":"test-visitor-123"}'
-```
-
-After sending the webhook, you can verify it was received by:
-
-1. Checking the CLI:
-   ```bash
-   node scripts/fingerprint-cli.js getVisitorEvents test-visitor-123
+   NEXT_PUBLIC_FINGERPRINT_PUBLIC_API_KEY=your_public_api_key
+   FINGERPRINT_SECRET_API_KEY=your_secret_api_key
    ```
 
-2. Viewing the webhook events in the UI:
-   - Navigate to the main page to see events for the current visitor
-   - Visit the dashboard to see a more detailed view
-   - Go to the `/webhooks` page to see all webhook events
+2. **Database Connection**:
+   ```
+   DATABASE_URL=your_neon_connection_string
+   DATABASE_URL_UNPOOLED=your_neon_unpooled_connection_string
+   ```
 
-## Deployment
+3. **Authentication**:
+   ```
+   NEXTAUTH_SECRET=your_secret_key
+   ADMIN_PASSWORD=your_admin_password
+   ```
 
-This application is designed to be deployed on Vercel:
+4. **Sealed Results (if enabled)**:
+   ```
+   FP_ENCRYPTION_KEY=your_encryption_key
+   ```
 
-```bash
-npm run build
-npm run deploy
-```
+### Vercel Region Selection
+
+For best performance with Neon PostgreSQL, choose a Vercel region close to your Neon database region. For example, if your Neon database is in AWS us-east-2, use the US East (N. Virginia) region on Vercel.
+
+## License
+
+This project is for demonstration purposes only. For production use, make sure to comply with Fingerprint's terms of service and implement proper security measures.
