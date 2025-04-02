@@ -1,6 +1,6 @@
 import VisitorInfo from '../components/VisitorInfo'
 import WebhookEvents from '../components/WebhookEvents'
-import { ChevronRight, ExternalLink, AlertTriangle } from 'lucide-react'
+import { ChevronRight, ExternalLink, AlertTriangle, Terminal } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -8,19 +8,21 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Warning Banner */}
-        <div className="mb-8 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-md shadow-sm dark:bg-amber-900/30 dark:border-amber-600">
+        {/* Demo Logging Banner */}
+        <div className="mb-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-md shadow-sm dark:bg-blue-900/30 dark:border-blue-600">
           <div className="flex items-start">
-            <AlertTriangle className="w-6 h-6 text-amber-500 mr-3 flex-shrink-0 mt-0.5" />
+            <Terminal className="w-6 h-6 text-blue-500 mr-3 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-amber-800 dark:text-amber-200 font-medium text-lg">Public Data Warning</h3>
-              <p className="text-amber-700 dark:text-amber-300 mt-1">
-                This demo publicly displays all visitor data and webhook events. In a production environment, 
-                you should implement proper authentication and authorization to protect sensitive information.
+              <h3 className="text-blue-800 dark:text-blue-200 font-medium text-lg">Demo Logging Enabled</h3>
+              <p className="text-blue-700 dark:text-blue-300 mt-1">
+                Enhanced console logging has been enabled for debugging Fingerprint result reception and unsealing.
+                Open your browser console (F12 or Cmd+Option+I) to view detailed logs.
               </p>
             </div>
           </div>
         </div>
+        
+
 
         {/* Header with gradient underline */}
         <div className="text-center mb-16 relative">
