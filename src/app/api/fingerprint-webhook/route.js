@@ -61,9 +61,10 @@ export async function POST(request) {
       
       // Insert event data
       await db.run(
-        `INSERT OR IGNORE INTO events
+        `INSERT INTO events
          (visitor_id, request_id, timestamp, event_time, ip, incognito, url, raw_data)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, to_timestamp((?::BIGINT)/1000), ?, ?, ?, ?, ?)
+         ON CONFLICT (request_id) DO NOTHING`,
         webhookData.visitorId,
         webhookData.requestId || null,
         webhookData.timestamp || new Date().getTime(),

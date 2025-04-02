@@ -39,7 +39,8 @@ export async function GET(request) {
         await db.run(
           `INSERT INTO events
            (visitor_id, request_id, timestamp, event_time, ip, incognito, url, raw_data)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, to_timestamp((?::BIGINT)/1000), ?, ?, ?, ?, ?)
+           ON CONFLICT (request_id) DO NOTHING`,
           testVisitorId,
           'test-request-' + testTimestamp,
           testTimestamp,
@@ -55,7 +56,7 @@ export async function GET(request) {
         console.log('Test event inserted successfully');
         
         // Verify tables and counts
-        const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
+        const tables = await db.all("SELECT tablename as name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
         console.log(`Database tables after test insert: ${tables.map(t => t.name).join(', ')}`);
         
         const eventCount = await db.get('SELECT COUNT(*) as count FROM events');
@@ -75,7 +76,7 @@ export async function GET(request) {
     // First, check if the events table exists and has data
     try {
       console.log('Checking database structure');
-      const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'");
+      const tables = await db.all("SELECT tablename as name FROM pg_catalog.pg_tables WHERE schemaname = 'public'");
       console.log(`Database tables: ${tables.map(t => t.name).join(', ')}`);
       
       const hasEventsTable = tables.some(table => table.name === 'events');
