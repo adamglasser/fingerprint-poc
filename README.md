@@ -145,22 +145,6 @@ The application uses the `@neondatabase/serverless` driver which supports two co
 
 The implementation includes compatibility layers for both methods, making it easy to work with the database regardless of your preferred approach.
 
-## CLI Tool
-
-A command-line interface tool is provided for managing visitor data. The CLI tool accesses the same Neon PostgreSQL database as the web application.
-
-### Available Commands
-
-```bash
-# List all visitors
-node scripts/fingerprint-cli.js listVisitors
-
-# Get details for a specific visitor
-node scripts/fingerprint-cli.js getVisitorEvents <visitorId>
-
-# Delete a visitor and all their events
-node scripts/fingerprint-cli.js deleteVisitor <visitorId>
-```
 
 ## Webhook Testing with ngrok
 
