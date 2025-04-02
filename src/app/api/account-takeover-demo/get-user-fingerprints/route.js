@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { userStore } from '../register/route';
+import { openDb } from '@/lib/db';
 
 export async function POST(request) {
+  let db = null;
   try {
     const { username } = await request.json();
     
@@ -13,26 +15,20 @@ export async function POST(request) {
       );
     }
     
-    // Check if user exists
-    if (!(await userStore.has(username))) {
+    // Open a single DB connection for all operations
+    db = await openDb();
+    
+    // Check if user exists - pass the db connection
+    const exists = await db.get('SELECT * FROM users WHERE username = ?', username);
+    if (!exists) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
     
-    // Get the user record
-    const user = await userStore.get(username);
-    
-    // Prepare fingerprint data to return
-    let fingerprints = [];
-    
-    if (Array.isArray(user.fingerprint)) {
-      fingerprints = user.fingerprint;
-    } else {
-      // If it's a single value, put it in an array
-      fingerprints = [user.fingerprint];
-    }
+    // Parse the fingerprint JSON array
+    const fingerprints = JSON.parse(exists.fingerprints || '[]');
     
     // Return the fingerprints
     return NextResponse.json({
@@ -46,5 +42,8 @@ export async function POST(request) {
       { error: 'An error occurred while retrieving fingerprints' },
       { status: 500 }
     );
+  } finally {
+    // Make sure to close the DB connection when done
+    if (db) await db.close();
   }
 } 
