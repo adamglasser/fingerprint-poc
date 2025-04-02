@@ -20,13 +20,82 @@ export default function Dashboard() {
   const [userFingerprints, setUserFingerprints] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fingerprintError, setFingerprintError] = useState(null);
+  const [sealedResult, setSealedResult] = useState(null);
+  const [visitorData, setVisitorData] = useState(null);
   
-  // Get the visitor's fingerprint for display
+  // Get the visitor's fingerprint for display - exactly like the register page
   const {
     isLoading: isFingerprintLoading,
     error: visitorFingerprintError,
-    data: visitorData,
+    data: initialVisitorData,
   } = useVisitorData({ immediate: true });
+
+  // Update visitorData when initialVisitorData changes - exactly like the register page
+  useEffect(() => {
+    setVisitorData(initialVisitorData);
+  }, [initialVisitorData]);
+
+  // Decrypt the sealed result - exactly like the register page
+  const sendSealedResult = async (sealedResult) => {
+    if (!sealedResult) return;
+    
+    try {
+      const response = await fetch('/api/fingerprint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'unsealResult',
+          sealedResult: sealedResult
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unseal result');
+      }
+      
+      const data = await response.json();
+      
+      // Set the server data and mark that we've processed the sealed result
+      setSealedResult(sealedResult); // Mark this sealed result as processed
+
+      // If the unsealed data contains visitor information, update the visitorData
+      if (data.visitorId) {
+        // Create a new visitorData object with the unsealed information
+        const updatedVisitorData = {
+          ...visitorData, // Keep existing visitorData
+          ...data, // Spread the unsealed data 
+          visitorId: data.visitorId, // Ensure these specific fields are set correctly
+          confidence: data.confidence || visitorData?.confidence,
+          requestId: data.requestId || visitorData?.requestId,
+        };
+        setVisitorData(updatedVisitorData);
+      }
+      
+    } catch (err) {
+      console.error('Error unsealing result:', err);
+    }
+  };
+
+  // Process sealed result - exactly like the register page
+  useEffect(() => {
+    if (visitorData) {
+      // If we have a sealed result and haven't processed it yet
+      if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
+        sendSealedResult(visitorData.sealedResult);
+      }
+    }
+  }, [visitorData, sealedResult]);
+
+  // Debug fingerprint loading - similar to register page
+  useEffect(() => {
+    console.log('Dashboard fingerprint debug:');
+    console.log('- Loading state:', isFingerprintLoading);
+    console.log('- Error:', visitorFingerprintError);
+    console.log('- Visitor data:', visitorData);
+  }, [isFingerprintLoading, visitorFingerprintError, visitorData]);
 
   // Check if user is logged in and fetch fingerprints if they are
   useEffect(() => {
@@ -43,6 +112,9 @@ export default function Dashboard() {
     // Fetch fingerprints for the user
     const fetchFingerprints = async () => {
       try {
+        setIsLoading(true);
+        
+        console.log('Fetching fingerprints for user:', storedUsername);
         const response = await fetch('/api/account-takeover-demo/get-user-fingerprints', {
           method: 'POST',
           headers: {
@@ -56,12 +128,15 @@ export default function Dashboard() {
         const data = await response.json();
         
         if (response.ok) {
+          console.log('Successfully fetched fingerprints:', data);
           setUserFingerprints(data.fingerprints || []);
         } else {
           console.error('Error fetching fingerprints:', data.error);
+          setFingerprintError(data.error || 'Failed to retrieve fingerprints');
         }
       } catch (error) {
         console.error('Error fetching fingerprints:', error);
+        setFingerprintError('Network error while retrieving fingerprints');
       } finally {
         setIsLoading(false);
       }
@@ -83,12 +158,12 @@ export default function Dashboard() {
   };
 
   // Show loading state
-  if (isLoading || isFingerprintLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-md">
           <Loader2 className="w-10 h-10 text-blue-600 dark:text-blue-400 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading your account information...</p>
         </div>
       </div>
     );
