@@ -1,252 +1,171 @@
 // lib/db.js
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
-import fs from 'fs/promises';
-import fsSync from 'fs';
-import path from 'path';
-import { put, list, del, getDownloadUrl } from '@vercel/blob';
-import { Readable } from 'stream';
-import { pipeline } from 'stream/promises';
+import { Pool, neon } from '@neondatabase/serverless';
 
 // Check if we're in development mode or CLI mode
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isCliMode = process.env.CLI_MODE === 'true';
 console.log(`Database running in ${isDevelopment ? 'development' : 'production'} mode, CLI mode: ${isCliMode ? 'yes' : 'no'}`);
 
-// Local path for temporary storage during request processing
-const LOCAL_DB_PATH = isDevelopment || isCliMode
-  ? path.resolve('./data/fingerprint.db') 
-  : path.resolve('/tmp/fingerprint.db');
-
-// Blob storage key for the database file
-const BLOB_KEY = 'fingerprint-database.db';
-
-// Helper function to download the database from Blob storage
-async function downloadDbFromBlob() {
-  try {
-    console.log(`Starting downloadDbFromBlob, environment: ${isDevelopment ? 'development' : 'production'}, CLI mode: ${isCliMode}`);
-    
-    // In development mode or CLI mode, just use the local file
-    if (isDevelopment || isCliMode) {
-      // Ensure the directory exists
-      await fs.mkdir(path.dirname(LOCAL_DB_PATH), { recursive: true });
-      
-      // Check if the file exists, if not, it will be created when the DB is opened
-      try {
-        await fs.access(LOCAL_DB_PATH);
-        console.log(`Local database file exists at: ${LOCAL_DB_PATH}`);
-      } catch (error) {
-        // File doesn't exist, which is fine for a new database
-        console.log('Creating new local database file');
-      }
-      
-      return true;
-    }
-    
-    // Production mode - use Vercel Blob
-    console.log('Production mode: attempting to download database from Vercel Blob');
-    
-    // Check if the local file already exists and remove it
-    try {      
-      await fs.access(LOCAL_DB_PATH);
-      await fs.unlink(LOCAL_DB_PATH);
-      console.log(`Removed existing temporary database file at: ${LOCAL_DB_PATH}`);
-    } catch (error) {
-      // File doesn't exist, which is fine
-      console.log(`No existing temporary database file at: ${LOCAL_DB_PATH}`);
-    }
-
-    // Ensure the directory exists
-    await fs.mkdir(path.dirname(LOCAL_DB_PATH), { recursive: true });
-    console.log(`Ensured directory exists for: ${LOCAL_DB_PATH}`);
-
-    // Get the token from environment
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    
-    if (!token) {
-      console.error('BLOB_READ_WRITE_TOKEN not found in environment variables');
-      return false;
-    }
-    console.log('BLOB_READ_WRITE_TOKEN found in environment variables');
-
-    // List all blobs without filtering by prefix
-    console.log('Listing all blobs');
-    const { blobs } = await list({ token });
-    console.log(`Found ${blobs.length} total blobs`);
-    
-    // Find all blobs that start with the consistent key format (including .db extension)
-    const dbBlobs = blobs.filter(blob => 
-      blob.pathname.startsWith(`${BLOB_KEY}`)
-    );
-    console.log(`Found ${dbBlobs.length} database blobs`);
-    
-    if (dbBlobs.length > 0) {
-      // Sort by creation time (newest first)
-      dbBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-      
-      // Use the most recently created blob
-      const dbBlob = dbBlobs[0];
-      
-      console.log(`Selected newest database blob: ${dbBlob.pathname}, size: ${dbBlob.size} bytes, uploaded: ${dbBlob.uploadedAt}`);
-      
-      // Get the blob URL
-      const blobUrl = dbBlob.url;
-      console.log(`Blob URL: ${blobUrl}`);
-      
-      // Download the blob content
-      console.log('Downloading blob content...');
-      const response = await fetch(blobUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to download blob: ${response.statusText}`);
-      }
-      
-      // Get the blob data as an array buffer
-      const blobData = await response.arrayBuffer();
-      console.log(`Downloaded blob data, size: ${blobData.byteLength} bytes`);
-      
-      // Create a readable stream from the blob
-      const blobStream = Readable.from(Buffer.from(blobData));
-      
-      // Create a writable stream to the local file
-      const fileStream = fsSync.createWriteStream(LOCAL_DB_PATH);
-      
-      // Pipe the blob data to the local file
-      console.log(`Writing blob data to: ${LOCAL_DB_PATH}`);
-      await pipeline(blobStream, fileStream);
-      console.log(`Successfully downloaded database from Blob storage: ${dbBlob.pathname}`);
-      
-      // Verify the file was created
-      try {
-        const stats = await fs.stat(LOCAL_DB_PATH);
-        console.log(`Verified database file: ${LOCAL_DB_PATH}, size: ${stats.size} bytes`);
-      } catch (statError) {
-        console.error(`Error verifying database file: ${statError.message}`);
-      }
-    } else {
-      console.log('No database blobs found');
-      console.log('Available blobs:');
-      blobs.forEach((blob, index) => {
-        console.log(`${index + 1}: ${blob.pathname} (${blob.size} bytes)`);
-      });
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error downloading database from Blob storage:', error);
-    // If download fails, we'll create a new database
-    return false;
+// Choose the appropriate connection string based on the environment
+const getConnectionString = () => {
+  if (isDevelopment || isCliMode) {
+    // For development, you might want to use the unpooled connection
+    return process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   }
+  // For production, use the pooled connection for better performance
+  return process.env.DATABASE_URL;
+};
+
+// For HTTP-based queries (simple queries)
+export const sql = neon(getConnectionString());
+
+// Helper to convert SQLite-style queries to PostgreSQL
+function convertSqliteToPg(sqliteQuery) {
+  let paramCount = 0;
+  return sqliteQuery.replace(/\?/g, () => `$${++paramCount}`);
 }
 
-// Helper function to upload the database to Blob storage
-async function uploadDbToBlob() {
-  try {
-    // In development mode or CLI mode, do nothing - we're using the local file directly
-    if (isDevelopment || isCliMode) {
-      return true;
-    }
-    
-    // Production mode - upload to Vercel Blob
-    console.log('Production mode: uploading database to Vercel Blob');
-    
-    // Read the database file
-    const fileBuffer = await fs.readFile(LOCAL_DB_PATH);
-    console.log(`Read database file, size: ${fileBuffer.length} bytes`);
-    
-    // Get the token from environment
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    
-    if (!token) {
-      console.error('BLOB_READ_WRITE_TOKEN not found in environment variables');
-      return false;
-    }
-    
-    // First, list all existing blobs to find and potentially delete old ones
-    console.log('Listing existing blobs before upload');
-    const { blobs } = await list({ token });
-    
-    // Find all fingerprint-database blobs
-    const dbBlobs = blobs.filter(blob => 
-      blob.pathname.startsWith(BLOB_KEY)
-    );
-    
-    console.log(`Found ${dbBlobs.length} existing database blobs`);
-    
-    // If there are too many blobs, delete some of the older ones
-    if (dbBlobs.length > 10) {
-      console.log('Too many database blobs, cleaning up older ones');
-      
-      // Sort by creation time (oldest first)
-      dbBlobs.sort((a, b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
-      
-      // Keep the 5 newest blobs, delete the rest
-      const blobsToDelete = dbBlobs.slice(0, dbBlobs.length - 5);
-      
-      for (const blob of blobsToDelete) {
-        try {
-          console.log(`Deleting old blob: ${blob.pathname}`);
-          await del(blob.pathname, { token });
-        } catch (deleteError) {
-          console.error(`Error deleting blob ${blob.pathname}:`, deleteError);
-        }
-      }
-    }
-    
-    // Upload to Blob storage with the consistent key format (including .db extension)
-    console.log(`Uploading database to Blob storage with key: ${BLOB_KEY}`);
-    const result = await put(`${BLOB_KEY}`, fileBuffer, {
-      access: 'public',
-      token
+// In serverless environments, we need to create a pool for each request
+function getPool() {
+  // Create a new pool if it doesn't exist yet
+  if (!pool) {
+    pool = new Pool({
+      connectionString: getConnectionString()
     });
-    
-    console.log(`Successfully uploaded database to Blob storage: ${result.pathname}, size: ${result.size} bytes, URL: ${result.url}`);
-    return true;
-  } catch (error) {
-    console.error('Error uploading database to Blob storage:', error);
-    return false;
   }
+  return pool;
 }
+
+// Initialize database connection pool for WebSocket-based connections
+// (when you need sessions or transactions)
+let pool = null;
 
 // Initialize database connection
 export async function openDb() {
-  // Try to download the database from Blob storage
-  await downloadDbFromBlob();
-  
-  // Open the database connection
-  const db = await open({
-    filename: LOCAL_DB_PATH,
-    driver: sqlite3.Database
-  });
-  
-  // Create tables if they don't exist
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS visitors (
-      visitor_id TEXT PRIMARY KEY,
-      first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      visit_count INTEGER DEFAULT 1
-    );
+  try {
+    // Ensure we have a pool - in serverless environments, this ensures
+    // we create a new one if needed for each request
+    const currentPool = getPool();
     
-    CREATE TABLE IF NOT EXISTS events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      visitor_id TEXT,
-      request_id TEXT UNIQUE,
-      timestamp TIMESTAMP,
-      event_time TEXT,
-      ip TEXT,
-      incognito BOOLEAN,
-      url TEXT,
-      raw_data TEXT,
-      FOREIGN KEY (visitor_id) REFERENCES visitors(visitor_id)
-    );
-  `);
+    // Create tables if they don't exist
+    await currentPool.query(`
+      CREATE TABLE IF NOT EXISTS visitors (
+        visitor_id TEXT PRIMARY KEY,
+        first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        visit_count INTEGER DEFAULT 1
+      );
+      
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        visitor_id TEXT,
+        request_id TEXT UNIQUE,
+        timestamp TIMESTAMP,
+        event_time TEXT,
+        ip TEXT,
+        incognito BOOLEAN,
+        url TEXT,
+        raw_data TEXT,
+        FOREIGN KEY (visitor_id) REFERENCES visitors(visitor_id)
+      );
+    `);
+    
+    // Return an object that wraps the pool and provides compatibility methods
+    return {
+      query: (...args) => currentPool.query(...args),
+      // SQLite compatibility methods
+      exec: async (sqlStatement) => {
+        // In PostgreSQL, we can just execute the SQL directly
+        return await currentPool.query(sqlStatement);
+      },
+      // Equivalent to SQLite's get - returns the first row
+      get: async (sql, ...params) => {
+        // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+        const pgSql = convertSqliteToPg(sql);
+        // Flatten parameters array - SQLite's driver allows nested arrays but PostgreSQL doesn't
+        const flatParams = params.flat();
+        
+        console.log('SQL query:', pgSql);
+        console.log('Parameters:', flatParams);
+        
+        const result = await currentPool.query(pgSql, flatParams);
+        return result.rows[0] || null;
+      },
+      // Equivalent to SQLite's all - returns all rows
+      all: async (sql, ...params) => {
+        // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+        const pgSql = convertSqliteToPg(sql);
+        // Flatten parameters array - SQLite's driver allows nested arrays but PostgreSQL doesn't
+        const flatParams = params.flat();
+        
+        console.log('SQL query:', pgSql);
+        console.log('Parameters:', flatParams);
+        
+        const result = await currentPool.query(pgSql, flatParams);
+        return result.rows;
+      },
+      // Equivalent to SQLite's run - executes SQL and returns metadata
+      run: async (sql, ...params) => {
+        // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
+        const pgSql = convertSqliteToPg(sql);
+        // Flatten parameters array - SQLite's driver allows nested arrays but PostgreSQL doesn't
+        const flatParams = params.flat();
+        
+        console.log('SQL query:', pgSql);
+        console.log('Parameters:', flatParams);
+        
+        const result = await currentPool.query(pgSql, flatParams);
+        return { 
+          changes: result.rowCount, 
+          lastID: result.rows[0]?.id 
+        };
+      },
+      // Add close method for backward compatibility
+      close: async () => closeDb(),
+      // For direct pool access
+      pool: currentPool
+    };
+  } catch (error) {
+    console.error('Error initializing database connection:', error);
+    throw error;
+  }
+}
+
+// Close the database connection
+export async function closeDb() {
+  if (pool) {
+    await pool.end();
+    pool = null;
+  }
+}
+
+// Helper function for simple queries using HTTP
+export async function query(text, params = []) {
+  try {
+    // Use the sql template tag for HTTP-based queries
+    if (params.length > 0) {
+      return await sql.query(text, params);
+    }
+    return await sql`${sql.unsafe(text)}`;
+  } catch (error) {
+    console.error('Error executing query:', error);
+    throw error;
+  }
+}
+
+// Helper function for transaction-based queries using WebSockets
+export async function withTransaction(callback) {
+  const client = await (await openDb()).pool.connect();
   
-  // Wrap the close method to upload to Blob storage before closing
-  const originalClose = db.close.bind(db);
-  db.close = async () => {
-    await originalClose();
-    await uploadDbToBlob();
-  };
-  
-  return db;
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
