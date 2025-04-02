@@ -56,6 +56,11 @@ export default function VisitorInfo() {
     setServerLoading(true);
     setServerError(null);
     
+    console.log(`📡 DEMO: Fetching server data - Action: ${action}`);
+    console.log(`📊 DEMO: Request params:`, { visitorId, ...additionalParams });
+    
+    const startTime = performance.now();
+    
     try {
       const params = {
         action,
@@ -71,29 +76,96 @@ export default function VisitorInfo() {
         body: JSON.stringify(params),
       });
       
+      const endTime = performance.now();
+      console.log(`⏱️ DEMO: Server request took ${(endTime - startTime).toFixed(2)}ms`);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ DEMO: Server request failed:', errorData);
         throw new Error(errorData.error || 'Failed to fetch data from server');
       }
       
       const data = await response.json();
+      console.log(`✅ DEMO: ${action} successful:`, data);
       setServerData(data);
     } catch (err) {
       setServerError(err.message);
-      console.error(`Error in ${action}:`, err);
+      console.error(`❌ DEMO ERROR in ${action}:`, err);
     } finally {
       setServerLoading(false);
+      console.log(`🏁 DEMO: Completed ${action} request`);
     }
   };
 
-  // Decrypt the sealed result
+  // Function to compare a raw proxy response with the library's sealed result
+  const compareProxyResponseWithSealedResult = (proxyResponse, librarySealed) => {
+    if (!proxyResponse || !librarySealed) {
+      console.log('⚠️ DEMO: Cannot compare - missing data');
+      return;
+    }
+    
+    console.log('🔎 DEMO: Comparing raw proxy data with library sealed result:');
+    console.log({
+      rawProxy: {
+        length: proxyResponse.length,
+        sample: proxyResponse.substring(0, 30) + '...',
+        base64Valid: /^[A-Za-z0-9+/=]+$/.test(proxyResponse),
+        firstChar: proxyResponse.charAt(0),
+        lastChar: proxyResponse.charAt(proxyResponse.length - 1)
+      },
+      librarySealed: {
+        length: librarySealed.length,
+        sample: librarySealed.substring(0, 30) + '...',
+        base64Valid: /^[A-Za-z0-9+/=]+$/.test(librarySealed),
+        firstChar: librarySealed.charAt(0),
+        lastChar: librarySealed.charAt(librarySealed.length - 1)
+      },
+      comparison: {
+        lengthDiff: proxyResponse.length - librarySealed.length,
+        sameFormat: /^[A-Za-z0-9+/=]+$/.test(proxyResponse) === /^[A-Za-z0-9+/=]+$/.test(librarySealed),
+        firstCharsSame: proxyResponse.charAt(0) === librarySealed.charAt(0),
+        firstCharsPlus10Same: proxyResponse.substring(0, 10) === librarySealed.substring(0, 10)
+      }
+    });
+  };
+  
+  // Example usage: you can call this from the console with raw proxy data
+  // For example: window.compareFingerprintData('p5QIHF7Y00FQKlhL6V5R6GcZWIxAler4YGBZrNsUe06Fepz5XdMrMHQNPwY1SMxePhidlo4aG/sPwri7opVQhI4F5YX4')
+  useEffect(() => {
+    window.compareFingerprintData = (proxyData) => {
+      if (visitorData?.sealedResult) {
+        compareProxyResponseWithSealedResult(proxyData, visitorData.sealedResult);
+      } else {
+        console.log('⚠️ No sealed result available to compare with');
+      }
+    };
+    
+    // Clean up function to remove the global when component unmounts
+    return () => {
+      delete window.compareFingerprintData;
+    };
+  }, [visitorData]); // Re-assign when visitorData changes
+  
+  // Process the pre-processed library result 
   const sendSealedResult = async (sealedResult) => {
     if (!sealedResult) return;
     
     setServerLoading(true);
     setServerError(null);
     
+    // Demo logging: This is NOT the raw proxy response, but the library-processed sealed result
+    const logSealedData = {
+      length: sealedResult.length,
+      firstChars: sealedResult.substring(0, 30) + '...',
+      lastChars: '...' + sealedResult.substring(sealedResult.length - 30),
+      containsBase64Chars: /^[A-Za-z0-9+/=]+$/.test(sealedResult),
+    };
+    console.log('📦 DEMO: Received library-processed sealed result (NOT raw proxy data):', logSealedData);
+    
     try {
+      console.log('🔒 DEMO: Starting server-side unsealing process with FP_ENCRYPTION_KEY');
+      const startTime = performance.now();
+      
       const response = await fetch('/api/fingerprint', {
         method: 'POST',
         headers: {
@@ -105,12 +177,17 @@ export default function VisitorInfo() {
         }),
       });
       
+      const endTime = performance.now();
+      console.log(`⏱️ DEMO: Server-side unsealing took ${(endTime - startTime).toFixed(2)}ms`);
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ DEMO: Server unsealing failed:', errorData);
         throw new Error(errorData.error || 'Failed to unseal result');
       }
       
       const data = await response.json();
+      console.log('🔓 DEMO: Server successfully unsealed the data:', data);
       
       // Set the server data and mark that we've processed the sealed result
       setServerData(data);
@@ -118,6 +195,15 @@ export default function VisitorInfo() {
 
       // If the unsealed data contains visitor information, update the visitorData
       if (data.visitorId) {
+        // Properly log confidence as an object if it exists
+        const confidenceLog = data.confidence ? 
+          (typeof data.confidence === 'object' ? 
+            `${data.confidence.score ? (Math.round(data.confidence.score * 100) + '%') : 'unknown'} (${JSON.stringify(data.confidence)})` : 
+            data.confidence) : 
+          'N/A';
+        
+        console.log(`🔍 DEMO: Unsealed visitor ID: ${data.visitorId} with confidence: ${confidenceLog}`);
+        
         // Create a new visitorData object with the unsealed information
         const updatedVisitorData = {
           ...visitorData, // Keep existing visitorData
@@ -127,27 +213,40 @@ export default function VisitorInfo() {
           requestId: data.requestId || visitorData.requestId,
         };
         setVisitorData(updatedVisitorData);
+        console.log('✅ DEMO: Updated app state with unsealed data');
+      } else {
+        console.log('⚠️ DEMO: Unsealed data did not contain a visitor ID');
       }
       
     } catch (err) {
       setServerError(err.message);
-      console.error('Error unsealing result:', err);
+      console.error('❌ DEMO ERROR in server unsealing process:', err);
     } finally {
       setServerLoading(false);
+      console.log('🏁 DEMO: Completed server unsealing process');
     }
   };
 
   useEffect(() => {
     if (visitorData) {
+      console.log('🔄 DEMO: Processing visitor data update from Fingerprint library');
+      
       // If we have a sealed result and haven't processed it yet
       if (visitorData.sealedResult && visitorData.sealedResult !== sealedResult) {
+        console.log('🔏 DEMO: New library-processed sealed result detected');
         sendSealedResult(visitorData.sealedResult);
       } 
       // Only fall back to regular visitor data flow if we don't have a sealed result
       // or if we've already processed the sealed result
       else if (visitorData.visitorId && (!visitorData.sealedResult || visitorData.sealedResult === sealedResult)) {
+        console.log(`👤 DEMO: Using already unsealed visitor ID: ${visitorData.visitorId}`);
+        console.log(`ℹ️ DEMO: Sealed result status: ${visitorData.sealedResult ? 'already processed by server' : 'not present'}`);
         fetchServerData(visitorData.visitorId);
+      } else {
+        console.log('⚠️ DEMO: No visitor ID or sealed result available in library data');
       }
+    } else {
+      console.log('⏳ DEMO: Waiting for Fingerprint library data...');
     }
   }, [visitorData, sealedResult]);
 
