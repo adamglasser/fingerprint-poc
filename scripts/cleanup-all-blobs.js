@@ -29,7 +29,7 @@ if (!token) {
 // Configuration
 const dbPrefix = 'fingerprint-database';
 const imagePrefix = 'images';
-const keepRecentDatabaseCount = 5;
+const keepRecentDatabaseCount = 0;
 
 async function cleanupAllBlobs() {
   try {
@@ -76,10 +76,9 @@ async function cleanupAllBlobs() {
     databaseBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
     
     // Keep the most recent database blobs, mark the rest for deletion
-    const databaseBlobsToDelete = databaseBlobs.slice(keepRecentDatabaseCount);
+    const databaseBlobsToDelete = databaseBlobs;
     
-    console.log(`Keeping the ${keepRecentDatabaseCount} most recent database blobs`);
-    console.log(`Identified ${databaseBlobsToDelete.length} older database blobs for deletion`);
+    console.log(`Deleting ALL database blobs (${databaseBlobs.length} total)`);
     console.log(`Identified ${otherBlobs.length} other blobs for deletion`);
     
     // Combine blobs to delete
@@ -124,13 +123,13 @@ async function cleanupAllBlobs() {
     console.log(`Freed up approximately ${deletedSizeMB} MB of storage`);
     
     // Report remaining blobs
-    const keptDatabaseBlobs = databaseBlobs.slice(0, keepRecentDatabaseCount);
-    const remainingBlobCount = keptDatabaseBlobs.length + imageBlobs.length;
-    const remainingSize = [...keptDatabaseBlobs, ...imageBlobs].reduce((total, blob) => total + blob.size, 0);
+    const keptDatabaseBlobs = [];
+    const remainingBlobCount = imageBlobs.length;
+    const remainingSize = [...imageBlobs].reduce((total, blob) => total + blob.size, 0);
     const remainingSizeMB = (remainingSize / (1024 * 1024)).toFixed(2);
     
     console.log(`\nRemaining storage:`);
-    console.log(`- ${keptDatabaseBlobs.length} recent database blobs`);
+    console.log(`- 0 database blobs (all deleted)`);
     console.log(`- ${imageBlobs.length} image blobs`);
     console.log(`- ${remainingBlobCount} blobs total`);
     console.log(`- ${remainingSizeMB} MB total size`);
